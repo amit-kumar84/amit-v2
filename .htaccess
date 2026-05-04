@@ -1,0 +1,20 @@
+RewriteEngine On
+Options -Indexes
+
+# ----------------------------------------------------------------------------
+# Deny direct access to config / schema / docs / logs
+# ----------------------------------------------------------------------------
+<FilesMatch "\.(sql|log|md|env|ini|bak|sh|psd|xcf|yml|yaml|lock)$">
+  Require all denied
+</FilesMatch>
+
+# ----------------------------------------------------------------------------
+# Block direct access to internal folders that should only be served via PHP
+# ----------------------------------------------------------------------------
+RewriteRule ^includes/ - [F,L]
+RewriteRule ^memory/   - [F,L]
+RewriteRule ^docs/     - [F,L]
+RewriteRule ^debug/    - [F,L]
+
+# Allow uploaded photos to be served. PHP execution is restricted
+# via a dedicated .htaccess inside the uploads/ folder.
