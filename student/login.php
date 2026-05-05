@@ -4,8 +4,48 @@ require_once __DIR__ . '/../includes/lang.php';
 
 if (current_user() && current_user()['role'] === 'student') redirect(url('student/dashboard.php'));
 
+$loginConflict = $_SESSION['student_login_conflict'] ?? null;
+if ($loginConflict && (int)($loginConflict['expires'] ?? 0) < time()) {
+  unset($_SESSION['student_login_conflict']);
+  $loginConflict = null;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
+
+  $sessionAction = $_POST['session_action'] ?? '';
+  if ($sessionAction === 'cancel_conflict') {
+    unset($_SESSION['student_login_conflict']);
+    flash('Login canceled.', 'info');
+    redirect(url('student/login.php'));
+  }
+
+  if ($sessionAction === 'end_old_session') {
+    $token = (string)($_POST['conflict_token'] ?? '');
+    $pending = $_SESSION['student_login_conflict'] ?? null;
+    if (!$pending || (int)($pending['expires'] ?? 0) < time() || empty($pending['token']) || !hash_equals((string)$pending['token'], $token)) {
+      unset($_SESSION['student_login_conflict']);
+      flash('Session request expired. Please login again.', 'error');
+      redirect(url('student/login.php'));
+    }
+
+    $sidUser = db()->prepare('SELECT * FROM users WHERE id=? AND role="student" LIMIT 1');
+    $sidUser->execute([(int)$pending['user_id']]);
+    $u = $sidUser->fetch();
+    if (!$u) {
+      unset($_SESSION['student_login_conflict']);
+      flash('Student account not found.', 'error');
+      redirect(url('student/login.php'));
+    }
+
+    unset($u['password_hash']);
+    session_regenerate_id(true);
+    $_SESSION['user'] = $u;
+    set_active_user_session((int)$u['id'], 'student', session_id());
+    unset($_SESSION['student_login_conflict']);
+    redirect(url('student/dashboard.php'));
+  }
+
     $ident = trim($_POST['identifier'] ?? '');
     $dob   = trim($_POST['dob'] ?? '');
     $pwd   = $_POST['password'] ?? '';
@@ -16,9 +56,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('Invalid credentials. Please check Roll/Staff ID, DOB and password.', 'error');
         redirect(url('student/login.php'));
     }
+
+      $activeSid = get_active_user_session_id((int)$u['id'], 'student');
+      if ($activeSid && !hash_equals($activeSid, session_id())) {
+        $_SESSION['student_login_conflict'] = [
+          'user_id' => (int)$u['id'],
+          'token' => bin2hex(random_bytes(16)),
+          'expires' => time() + 300,
+        ];
+        flash('Your old session is already running on another browser/device.', 'warning');
+        redirect(url('student/login.php'));
+      }
+
     unset($u['password_hash']);
-    $_SESSION['user'] = $u;
     session_regenerate_id(true);
+      $_SESSION['user'] = $u;
+      set_active_user_session((int)$u['id'], 'student', session_id());
+      unset($_SESSION['student_login_conflict']);
     redirect(url('student/dashboard.php'));
 }
 $BODY_CLASS = 'auth-page';
@@ -64,6 +118,27 @@ require __DIR__ . '/../includes/header.php';
       <input type="password" name="password" class="form-control mb-4" required>
 
       <button class="btn btn-navy w-100" data-testid="student-login-submit"><?= t('sl_submit') ?></button>
+
+      <?php if ($loginConflict): ?>
+        <div class="alert alert-warning mt-3 mb-0" role="alert">
+          <div class="fw-bold mb-1">Old session already running</div>
+          <div class="small">This student account is already logged in on another browser/device.</div>
+          <div class="d-flex gap-2 mt-3">
+            <form method="post" class="m-0">
+              <?= csrf_input() ?>
+              <input type="hidden" name="session_action" value="end_old_session">
+              <input type="hidden" name="conflict_token" value="<?= h($loginConflict['token'] ?? '') ?>">
+              <button type="submit" class="btn btn-sm btn-danger">End old session and login</button>
+            </form>
+            <form method="post" class="m-0">
+              <?= csrf_input() ?>
+              <input type="hidden" name="session_action" value="cancel_conflict">
+              <button type="submit" class="btn btn-sm btn-outline-secondary">Cancel</button>
+            </form>
+          </div>
+        </div>
+      <?php endif; ?>
+
       <div class="mt-3 small">
         <a href="<?= url('index.php') ?>" class="text-decoration-none text-secondary"><i class="fas fa-arrow-left me-1"></i><?= t('sl_back') ?></a>
       </div>

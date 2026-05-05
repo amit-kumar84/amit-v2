@@ -46,15 +46,114 @@ require __DIR__ . '/../includes/header.php';
       <div class="bg-light p-3 small border"><?= nl2br(h($exam['instructions'])) ?></div>
     <?php endif; ?>
 
-    <form method="get" action="<?= url('student/take-exam.php') ?>" class="mt-4">
+    <form id="beginForm" method="get" action="<?= url('student/take-exam.php') ?>" class="mt-4">
       <input type="hidden" name="exam_id" value="<?= $eid ?>">
       <div class="form-check mb-3">
         <input type="checkbox" class="form-check-input" id="agree" required>
         <label class="form-check-label small" for="agree"><?= t('in_agree') ?></label>
       </div>
-      <button class="btn btn-success btn-lg"><i class="fas fa-shield-alt me-2"></i><?= t('in_begin') ?></button>
+      <button id="confirmBeginBtn" type="button" class="btn btn-success btn-lg"><i class="fas fa-shield-alt me-2"></i><?= t('in_begin') ?></button>
       <a href="<?= url('student/dashboard.php') ?>" class="btn btn-outline-secondary btn-lg ms-2">Cancel</a>
     </form>
+
+    <!-- Fullscreen start overlay -->
+    <div id="startOverlay" style="display:none; position:fixed; inset:0; background:radial-gradient(circle at 20% 10%, rgba(255,215,0,0.08), rgba(0,0,0,0.9)); z-index:1050; align-items:center; justify-content:center;">
+      <div style="text-align:center; color:#fff; width:100%;">
+        <div style="max-width:980px; margin:0 auto;">
+          <h2 id="overlayTitle" class="mb-3" style="font-size:28px; font-weight:700; text-shadow:0 2px 6px rgba(0,0,0,0.6)">Preparing to start</h2>
+          <div id="bigTimer" style="font-size:120px; font-weight:800; letter-spacing:2px; margin:18px 0; color:var(--saffron); text-shadow:0 6px 20px rgba(0,0,0,0.6)">--:--</div>
+          <p id="overlayMsg" class="mb-4" style="opacity:0.9">The exam will start when the timer reaches zero. Your screen will switch to fullscreen when you begin.</p>
+          <div>
+            <button id="startNowBtn" class="btn btn-lg btn-primary me-2" disabled>Start Exam</button>
+            <button id="overlayCancelBtn" class="btn btn-lg btn-outline-light">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <?php
+    // expose exam timestamps to JS
+    $start_ts = strtotime($exam['start_time']);
+    ?>
+    <script>
+    (function(){
+      const startTs = <?= (int)$start_ts ?> * 1000;
+      const confirmBtn = document.getElementById('confirmBeginBtn');
+      const overlay = document.getElementById('startOverlay');
+      const bigTimer = document.getElementById('bigTimer');
+      const startNowBtn = document.getElementById('startNowBtn');
+      const overlayCancelBtn = document.getElementById('overlayCancelBtn');
+      const beginForm = document.getElementById('beginForm');
+      const agree = document.getElementById('agree');
+
+      let timerId = null;
+
+      function formatMS(ms){
+        if (ms <= 0) return '00:00';
+        const s = Math.floor(ms/1000);
+        const mm = String(Math.floor(s/60)).padStart(2,'0');
+        const ss = String(s%60).padStart(2,'0');
+        return `${mm}:${ss}`;
+      }
+
+      function updateTimer(){
+        const now = Date.now();
+        const rem = startTs - now;
+        if (rem <= 0){
+          bigTimer.textContent = '00:00';
+          startNowBtn.disabled = false;
+          startNowBtn.classList.remove('btn-secondary');
+          startNowBtn.classList.add('btn-success');
+          // stop interval but keep overlay visible until user clicks start
+          clearInterval(timerId);
+          timerId = null;
+          return;
+        }
+        bigTimer.textContent = formatMS(rem);
+      }
+
+      function openOverlay(){
+        overlay.style.display = 'flex';
+        updateTimer();
+        if (!timerId) timerId = setInterval(updateTimer, 500);
+      }
+
+      function closeOverlay(){
+        overlay.style.display = 'none';
+        if (timerId){ clearInterval(timerId); timerId = null; }
+      }
+
+      confirmBtn.addEventListener('click', function(){
+        // validate checkbox
+        if (!agree.checkValidity()){
+          agree.reportValidity();
+          return;
+        }
+        openOverlay();
+      });
+
+      overlayCancelBtn.addEventListener('click', function(e){
+        e.preventDefault();
+        closeOverlay();
+      });
+
+      startNowBtn.addEventListener('click', function(e){
+        // when enabled, request fullscreen then submit
+        if (startNowBtn.disabled) return;
+        // try to enter fullscreen on documentElement
+        const el = document.documentElement;
+        const fs = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+        if (fs) {
+          try { fs.call(el); } catch (err) { /* ignore */ }
+        }
+        // submit the form
+        beginForm.submit();
+      });
+
+      // keyboard: Esc closes overlay
+      document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && overlay.style.display === 'flex'){ closeOverlay(); } });
+    })();
+    </script>
   </div>
 </main>
 <?php require __DIR__ . '/../includes/footer.php'; ?>

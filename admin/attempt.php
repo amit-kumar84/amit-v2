@@ -18,6 +18,12 @@ foreach ($ax->fetchAll() as $r) $ans[$r['question_id']] = $r;
 $viols = db()->prepare('SELECT * FROM violations WHERE attempt_id=? ORDER BY event_time'); $viols->execute([$aid]); $violations = $viols->fetchAll();
 require __DIR__ . '/_shell_top.php';
 
+// Fetch attempt history for same exam and roll number (covers multiple accounts with same roll)
+$history = [];
+$hst = db()->prepare('SELECT a.id, a.attempt_no, a.score, a.total, a.submitted_at FROM attempts a JOIN users u ON u.id=a.user_id WHERE a.exam_id=? AND LOWER(u.roll_number)=LOWER(?) ORDER BY a.attempt_no ASC');
+$hst->execute([$att['exam_id'], $att['roll_number']]);
+$history = $hst->fetchAll();
+
 function fmtSel($q, $a, $opts){
   if (!$a || !$a['selected_json']) return '<i class="text-muted">Not answered</i>';
   $s = json_decode($a['selected_json'], true);
@@ -35,8 +41,8 @@ function fmtCorrect($q, $opts){
   return h($q['correct_numeric']);
 }
 ?>
-<div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
-  <a href="<?= url('admin/results.php') ?>" class="text-secondary small align-self-center"><i class="fas fa-arrow-left"></i> Back</a>
+<div class="d-flex justify-content-between mb-3 flex-wrap gap-2 align-items-center">
+  <a href="<?= url('admin/exam-results-view.php?exam_id='.$att['exam_id']) ?>" class="btn btn-sm btn-back align-self-center"><i class="fas fa-arrow-left me-2"></i>Back to Exam Results</a>
   <div class="d-flex gap-2 flex-wrap">
     <a href="<?= url('admin/attempt-pdf.php?id='.$aid) ?>" target="_blank" class="btn btn-sm btn-navy"><i class="fas fa-file-pdf me-1"></i>Result + Answer Key (PDF / Print)</a>
     <a href="<?= url('admin/export-attempt.php?id='.$aid) ?>" class="btn btn-sm btn-success"><i class="fas fa-file-csv me-1"></i>Export CSV</a>
@@ -48,6 +54,31 @@ function fmtCorrect($q, $opts){
   <div class="col-md-3"><div class="exam-card"><small class="text-muted text-uppercase">Hosted By</small><div class="h6 mb-0"><?= h($att['creator_name'] ?? '—') ?></div><small class="text-muted"><?= h($att['creator_email'] ?? '') ?></small></div></div>
   <div class="col-md-3"><div class="exam-card"><small class="text-muted text-uppercase">Score</small><div class="h5 mb-0 text-success"><?= $att['score'] ?> / <?= $att['total'] ?></div><small><?= fmt_dt($att['submitted_at']) ?></small></div></div>
 </div>
+<?php if ($history): ?>
+<div class="attempt-history-card card p-3 mb-3">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <small class="text-muted">Attempt History</small>
+    <small class="text-muted">Total: <?= count($history) ?></small>
+  </div>
+  <div class="attempt-history-list d-flex gap-3 flex-wrap">
+    <?php foreach ($history as $idx => $h): $hid = $h['id']; $active = $hid == $aid; $delay = $idx * 0.06; ?>
+      <div class="attempt-item p-3 rounded-3<?= $active ? ' active' : '' ?>" style="--btn-delay:<?= $delay ?>s;">
+        <div class="d-flex align-items-center">
+          <span class="attempt-icon me-3"><i class="fas <?= $active ? 'fa-star' : 'fa-history' ?>"></i></span>
+          <div>
+            <a href="<?= url('admin/attempt.php?id='.$hid) ?>" class="attempt-open-btn btn btn-sm <?= $active ? 'btn-primary' : 'btn-outline-secondary' ?> rounded-pill">Attempt #<?= (int)$h['attempt_no'] ?></a>
+            <div class="small text-muted mt-1"><?= fmt_dt($h['submitted_at']) ?></div>
+          </div>
+          <div class="ms-auto">
+            <span class="badge score-badge"><?= h($h['score']).' / '.h($h['total']) ?></span>
+          </div>
+        </div>
+        
+      </div>
+    <?php endforeach; ?>
+  </div>
+</div>
+<?php endif; ?>
 <?php if ($violations): ?>
 <div class="alert alert-danger"><b><i class="fas fa-triangle-exclamation"></i> Violations Detected (<?= count($violations) ?>)</b>
   <ul class="mb-0 small"><?php foreach ($violations as $v): ?><li><b><?= h($v['event_type']) ?></b> — <?= h($v['description']) ?> <small class="text-muted">(<?= date('H:i:s', strtotime($v['event_time'])) ?>)</small></li><?php endforeach; ?></ul>

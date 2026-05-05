@@ -80,6 +80,7 @@ CREATE TABLE exams (
   exam_name         VARCHAR(200) NOT NULL,
   exam_code         VARCHAR(80)  NULL UNIQUE,
   duration_minutes  INT NOT NULL,
+  join_window_minutes INT NOT NULL DEFAULT 1,
   max_attempts      INT NOT NULL DEFAULT 1,
   start_time        DATETIME NOT NULL,
   end_time          DATETIME NOT NULL,

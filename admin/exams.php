@@ -29,8 +29,11 @@ if ($_SERVER['REQUEST_METHOD']==='POST') { csrf_check();
       flash('This exam code already assigned to another exam. Please give another code.', 'error');
       redirect(url('admin/exams.php'));
     }
-    $d = [trim($_POST['exam_name']), $exam_code, (int)$_POST['duration_minutes'], (int)$_POST['max_attempts'],
-          str_replace('T',' ', $_POST['start_time']).':00', str_replace('T',' ', $_POST['end_time']).':00',
+    $joinWindow = max(0, (int)($_POST['join_window_minutes'] ?? 0));
+    $startTime = str_replace('T',' ', $_POST['start_time']).':00';
+    $endTime = date('Y-m-d H:i:s', strtotime($startTime) + ((int)$_POST['duration_minutes']) * 60);
+    $d = [trim($_POST['exam_name']), $exam_code, (int)$_POST['duration_minutes'], $joinWindow, (int)$_POST['max_attempts'],
+          $startTime, $endTime,
           (int)($_POST['total_marks'] ?: 0), trim($_POST['instructions']??'')];
     // Per-exam violation config (super-admin-gated values coming from the modal).
     $vcfg = default_violation_config();
@@ -40,15 +43,15 @@ if ($_SERVER['REQUEST_METHOD']==='POST') { csrf_check();
     $maxV    = (int)($_POST['max_violations'] ?? 5); if ($maxV < 1) $maxV = 1;
     if ($id) {
       $before = db()->prepare('SELECT * FROM exams WHERE id=?'); $before->execute([$id]); $beforeRow = $before->fetch() ?: [];
-      db()->prepare('UPDATE exams SET exam_name=?,exam_code=?,duration_minutes=?,max_attempts=?,start_time=?,end_time=?,total_marks=?,instructions=?,violation_config=?,force_fullscreen=?,max_violations=? WHERE id=?')
+      db()->prepare('UPDATE exams SET exam_name=?,exam_code=?,duration_minutes=?,join_window_minutes=?,max_attempts=?,start_time=?,end_time=?,total_marks=?,instructions=?,violation_config=?,force_fullscreen=?,max_violations=? WHERE id=?')
         ->execute([...$d,$vcfgJson,$forceFs,$maxV,$id]);
-      $payload = ['table' => 'exams', 'before' => array_slice($beforeRow, 0, 8), 'after' => array_merge(['id' => $id], array_combine(['exam_name','exam_code','duration_minutes','max_attempts','start_time','end_time','total_marks','instructions'], $d)), 'violation_config' => $vcfg, 'force_fullscreen' => $forceFs, 'max_violations' => $maxV];
+      $payload = ['table' => 'exams', 'before' => array_slice($beforeRow, 0, 9), 'after' => array_merge(['id' => $id], array_combine(['exam_name','exam_code','duration_minutes','join_window_minutes','max_attempts','start_time','end_time','total_marks','instructions'], $d)), 'violation_config' => $vcfg, 'force_fullscreen' => $forceFs, 'max_violations' => $maxV];
       log_admin_activity('exam_update', 'Updated exam ' . trim($_POST['exam_name']) . ' (' . $exam_code . ')', $me, 'admin/exams.php', $payload);
     } else {
-      db()->prepare('INSERT INTO exams (exam_name,exam_code,duration_minutes,max_attempts,start_time,end_time,total_marks,instructions,violation_config,force_fullscreen,max_violations,created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+      db()->prepare('INSERT INTO exams (exam_name,exam_code,duration_minutes,join_window_minutes,max_attempts,start_time,end_time,total_marks,instructions,violation_config,force_fullscreen,max_violations,created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
         ->execute([...$d,$vcfgJson,$forceFs,$maxV,$me['id']]);
       $newId = (int)db()->lastInsertId();
-      $payload = ['table' => 'exams', 'after' => array_merge(['id' => $newId], array_combine(['exam_name','exam_code','duration_minutes','max_attempts','start_time','end_time','total_marks','instructions'], $d)), 'violation_config' => $vcfg];
+      $payload = ['table' => 'exams', 'after' => array_merge(['id' => $newId], array_combine(['exam_name','exam_code','duration_minutes','join_window_minutes','max_attempts','start_time','end_time','total_marks','instructions'], $d)), 'violation_config' => $vcfg];
       log_admin_activity('exam_add', 'Created exam ' . trim($_POST['exam_name']) . ' (' . $exam_code . ')', $me, 'admin/exams.php', $payload);
     }
     flash('Saved','success');
@@ -77,8 +80,10 @@ if ($_SERVER['REQUEST_METHOD']==='POST') { csrf_check();
     $ownsSource = $me['is_super'] || ((int)($s['created_by'] ?? 0) === (int)$me['id']);
     if (!$ownsSource && !in_array($dupAccess, ['view','edit','full'], true)) { flash('Permission denied: duplicate exam requires exam access.','error'); redirect(url('admin/exams.php')); }
     if (!can('exams','create',$me)) { flash('Permission denied: create exams.','error'); redirect(url('admin/exams.php')); }
-      db()->prepare('INSERT INTO exams (exam_name,duration_minutes,max_attempts,start_time,end_time,total_marks,instructions,created_by) VALUES (?,?,?,?,?,?,?,?)')
-        ->execute([$s['exam_name'].' (Copy)',$s['duration_minutes'],$s['max_attempts'],$s['start_time'],$s['end_time'],$s['total_marks'],$s['instructions'],$me['id']]);
+      $startTime = $s['start_time'];
+      $endTime = date('Y-m-d H:i:s', strtotime($startTime) + ((int)$s['duration_minutes']) * 60);
+      db()->prepare('INSERT INTO exams (exam_name,duration_minutes,join_window_minutes,max_attempts,start_time,end_time,total_marks,instructions,created_by) VALUES (?,?,?,?,?,?,?,?,?)')
+        ->execute([$s['exam_name'].' (Copy)',$s['duration_minutes'],$s['join_window_minutes'],$s['max_attempts'],$startTime,$endTime,$s['total_marks'],$s['instructions'],$me['id']]);
       $nid = db()->lastInsertId();
       $qs = db()->prepare('SELECT * FROM questions WHERE exam_id=? AND deleted_at IS NULL'); $qs->execute([$s['id']]);
       foreach ($qs->fetchAll() as $q) {
@@ -147,9 +152,9 @@ if ($status_filter !== 'all') {
   $rows = array_values(array_filter($rows, function($e) use ($status_filter) {
     $status = exam_status($e);
     if ($status_filter === 'active') return $status === 'active';
-    if ($status_filter === 'upcoming') return $status === 'upcoming';
+    if ($status_filter === 'upcoming') return in_array($status, ['upcoming','join'], true);
     if ($status_filter === 'closed') return $status === 'closed';
-    if ($status_filter === 'active_upcoming') return in_array($status, ['active','upcoming'], true);
+    if ($status_filter === 'active_upcoming') return in_array($status, ['active','upcoming','join'], true);
     return true;
   }));
 }
@@ -192,9 +197,9 @@ if (!empty($me['is_super'])) {
   </div>
 </div>
 <div class="row g-3">
-<?php foreach ($rows as $e): $st = $e['_single_status'] ?? exam_status($e); $mineOrSuper = $me['is_super'] || (int)$e['created_by'] === (int)$me['id']; ?>
-  <div class="col-md-6 col-lg-4"><div class="exam-card" data-exam-id="<?= (int)$e['id'] ?>" data-exam-code="<?= h($e['exam_code'] ?? '') ?>" data-status="<?= $st ?>">
-    <div class="d-flex justify-content-between align-items-start"><h5 class="fw-bold mb-0"><?= h($e['exam_name']) ?></h5><span class="pill status-<?= $st ?>"><?= $st ?></span></div>
+<?php foreach ($rows as $e): $st = $e['_single_status'] ?? exam_status($e); $stDisplay = $st === 'join' ? 'upcoming' : $st; $mineOrSuper = $me['is_super'] || (int)$e['created_by'] === (int)$me['id']; ?>
+  <div class="col-md-6 col-lg-4"><div class="exam-card" data-exam-id="<?= (int)$e['id'] ?>" data-exam-code="<?= h($e['exam_code'] ?? '') ?>" data-status="<?= $stDisplay ?>">
+    <div class="d-flex justify-content-between align-items-start"><h5 class="fw-bold mb-0\"><?= h($e['exam_name']) ?></h5><span class="pill status-<?= $stDisplay ?>"><?= $stDisplay ?></span></div>
     <div class="small text-secondary mt-2">Code: <b><?= h($e['exam_code'] ?? '') ?></b> · Duration: <b><?= $e['duration_minutes'] ?>min</b> · Attempts: <b><?= $e['max_attempts'] ?></b> · Qs: <b><?= $e['q'] ?></b></div>
     <div class="small text-muted"><?= fmt_dt($e['start_time']) ?> → <?= fmt_dt($e['end_time']) ?></div>
     <div class="small mt-2" style="background:#f8fafc; border-left:3px solid var(--navy); padding:6px 10px">
@@ -271,26 +276,28 @@ if (!empty($me['is_super'])) {
             <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(124,58,237,0.04), rgba(168,85,247,0.04)); border:1px solid rgba(124,58,237,0.15);">
               <label class="form-label-xs mb-2"><i class="fas fa-hourglass-end me-2" style="color:#7c3aed;"></i>Duration (minutes) <span class="text-danger">*</span></label>
               <input id="ef-dur" name="duration_minutes" type="number" min="1" class="form-control" required style="border: 2px solid rgba(124,58,237,0.15); padding: 10px 14px; transition: all 0.3s ease;">
+              <div class="small text-muted mt-2">The exam will run for this many minutes after it starts.</div>
             </div>
           </div>
+          <div class="col-md-6">
+            <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(14,165,233,0.04), rgba(96,165,250,0.04)); border:1px solid rgba(59,130,246,0.15);">
+              <label class="form-label-xs mb-2"><i class="fas fa-door-open me-2" style="color:#2563eb;"></i>Join window before start <span class="text-muted small" style="font-weight:400; text-transform:none;">— optional</span></label>
+              <input id="ef-join" name="join_window_minutes" type="number" min="0" value="10" class="form-control" style="border: 2px solid rgba(59,130,246,0.15); padding: 10px 14px; transition: all 0.3s ease;">
+              <div class="small text-muted mt-2">Allow students to join up to this many minutes before the scheduled start.</div>
+            </div>
+          </div>
+        </div>
+        <div class="row g-3 mb-4">
           <div class="col-md-6">
             <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(16,185,129,0.04), rgba(34,197,94,0.04)); border:1px solid rgba(16,185,129,0.15);">
               <label class="form-label-xs mb-2"><i class="fas fa-redo me-2" style="color:#10b981;"></i>Max Attempts <span class="text-danger">*</span></label>
               <input id="ef-att" name="max_attempts" type="number" min="1" value="1" class="form-control" required style="border: 2px solid rgba(16,185,129,0.15); padding: 10px 14px; transition: all 0.3s ease;">
             </div>
           </div>
-        </div>
-        <div class="row g-3 mb-4">
           <div class="col-md-6">
             <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(239,68,68,0.04), rgba(220,38,38,0.04)); border:1px solid rgba(239,68,68,0.15);">
               <label class="form-label-xs mb-2"><i class="fas fa-play-circle me-2" style="color:#ef4444;"></i>Start Time <span class="text-danger">*</span></label>
               <input id="ef-st" name="start_time" type="datetime-local" class="form-control" required style="border: 2px solid rgba(239,68,68,0.15); padding: 10px 14px; transition: all 0.3s ease;">
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(220,38,38,0.04), rgba(185,28,28,0.04)); border:1px solid rgba(220,38,38,0.15);">
-              <label class="form-label-xs mb-2"><i class="fas fa-stop-circle me-2" style="color:#dc2626;"></i>End Time <span class="text-danger">*</span></label>
-              <input id="ef-en" name="end_time" type="datetime-local" class="form-control" required style="border: 2px solid rgba(220,38,38,0.15); padding: 10px 14px; transition: all 0.3s ease;">
             </div>
           </div>
         </div>
@@ -389,11 +396,11 @@ function openCreateExamModal() {
   document.getElementById('ef-name').value = '';
   document.getElementById('ef-code').value = '';
   document.getElementById('ef-dur').value = 30;
+  document.getElementById('ef-join').value = 10;
   document.getElementById('ef-att').value = 1;
   document.getElementById('ef-tot').value = '';
   document.getElementById('ef-ins').value = '';
-  document.getElementById('ef-st').value = '';
-  document.getElementById('ef-en').value = '';
+  document.getElementById('ef-st').value = new Date(Date.now() + 3600000).toISOString().slice(0,16); // 1 hour from now
   document.getElementById('ef-title').textContent = 'Create Exam';
   
   // Show the modal
@@ -412,6 +419,7 @@ function openCreateExamModal() {
 
 function fillForm(e){ e=e||{}; document.getElementById('ef-id').value=e.id||'';
   document.getElementById('ef-name').value=e.exam_name||''; document.getElementById('ef-dur').value=e.duration_minutes||30;
+  document.getElementById('ef-join').value = (typeof e.join_window_minutes !== 'undefined' && e.join_window_minutes !== null) ? e.join_window_minutes : 10;
   document.getElementById('ef-code').value=e.exam_code||'';
   document.getElementById('ef-att').value=e.max_attempts||1; document.getElementById('ef-tot').value=e.total_marks||'';
   document.getElementById('ef-ins').value=e.instructions||''; document.getElementById('ef-title').textContent=e.id?'Edit Exam':'Create Exam';

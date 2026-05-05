@@ -28,11 +28,74 @@ function csrf_check(): void {
 
 function current_user(): ?array { return $_SESSION['user'] ?? null; }
 
+function ensure_user_active_sessions_table(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        db()->exec("CREATE TABLE IF NOT EXISTS user_active_sessions (
+            user_id INT NOT NULL,
+            role VARCHAR(20) NOT NULL,
+            session_id VARCHAR(128) NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, role),
+            KEY idx_uas_session (session_id)
+        ) ENGINE=InnoDB");
+    } catch (Throwable $e) {
+        // Do not block auth flow if migration fails.
+    }
+}
+
+function get_active_user_session_id(int $userId, string $role): ?string {
+    ensure_user_active_sessions_table();
+    try {
+        $s = db()->prepare('SELECT session_id FROM user_active_sessions WHERE user_id=? AND role=? LIMIT 1');
+        $s->execute([$userId, $role]);
+        $sid = $s->fetchColumn();
+        return $sid ? (string)$sid : null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+function set_active_user_session(int $userId, string $role, string $sessionId): void {
+    ensure_user_active_sessions_table();
+    try {
+        db()->prepare('INSERT INTO user_active_sessions (user_id, role, session_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE session_id=VALUES(session_id), updated_at=NOW()')
+            ->execute([$userId, $role, $sessionId]);
+    } catch (Throwable $e) {
+        // Fail-open, do not break login.
+    }
+}
+
+function clear_active_user_session_if_match(int $userId, string $role, string $sessionId): void {
+    ensure_user_active_sessions_table();
+    try {
+        db()->prepare('DELETE FROM user_active_sessions WHERE user_id=? AND role=? AND session_id=?')
+            ->execute([$userId, $role, $sessionId]);
+    } catch (Throwable $e) {
+        // no-op
+    }
+}
+
 function require_login(string $role): array {
     $u = current_user();
     if (!$u || $u['role'] !== $role) {
         redirect(url($role === 'admin' ? 'admin/login.php' : 'student/login.php'));
     }
+
+    // Enforce single active student session across browsers/devices.
+    if ($role === 'student') {
+        $activeSid = get_active_user_session_id((int)$u['id'], 'student');
+        if ($activeSid && !hash_equals($activeSid, session_id())) {
+            unset($_SESSION['user']);
+            flash('Your old session has been closed because you logged in from another browser/device.', 'error');
+            redirect(url('student/login.php'));
+        }
+        set_active_user_session((int)$u['id'], 'student', session_id());
+    }
+
     return $u;
 }
 
@@ -86,8 +149,17 @@ function fmt_dt($dt): string {
 
 function exam_status(array $e): string {
     $now = time();
-    if ($now < strtotime($e['start_time'])) return 'upcoming';
-    if ($now > strtotime($e['end_time']))   return 'closed';
+    $startTs = strtotime($e['start_time']);
+    $endTs = strtotime($e['end_time']);
+    $joinWindow = max(0, (int)($e['join_window_minutes'] ?? 0));
+    if ($joinWindow > 0) {
+        $joinStartTs = $startTs - ($joinWindow * 60);
+        if ($now >= $joinStartTs && $now < $startTs) {
+            return 'join';
+        }
+    }
+    if ($now < $startTs) return 'upcoming';
+    if ($now > $endTs)   return 'closed';
     return 'active';
 }
 
@@ -173,6 +245,9 @@ function ensure_exam_code_column(): void {
         } catch (Throwable $e) {
             // ignore if index creation fails
         }
+    }
+    if (empty($cols['join_window_minutes'])) {
+        db()->exec('ALTER TABLE exams ADD COLUMN join_window_minutes INT NOT NULL DEFAULT 0 AFTER duration_minutes');
     }
 }
 

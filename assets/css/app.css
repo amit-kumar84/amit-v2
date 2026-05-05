@@ -324,6 +324,107 @@ main.container .badge {
   background: linear-gradient(135deg, rgba(14, 42, 71, 0.02) 0%, rgba(0, 169, 224, 0.02) 100%) !important;
 }
 
+/* Attempt history cards */
+.attempt-history { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.attempt-history .attempt-btn { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:12px; background: linear-gradient(135deg,#ffffff,#f1f5f9); color: #0f172a; box-shadow: 0 6px 18px rgba(2,6,23,0.06); border: 1px solid rgba(2,6,23,0.04); text-decoration:none; transition: transform .28s cubic-bezier(.2,.9,.2,1), box-shadow .28s ease, background .28s ease; min-width: 180px; }
+.attempt-history .attempt-btn { position: relative; overflow: visible; }
+.attempt-history .attempt-btn::before { content: ''; position: absolute; left: -6px; top: 12px; bottom: 12px; width: 6px; border-radius: 6px; background: linear-gradient(180deg,#FF9933,#00A9E0); box-shadow: 0 6px 18px rgba(0,169,224,0.08); }
+.attempt-history .attempt-btn .attempt-left { display:flex; flex-direction:column; align-items:flex-start; }
+.attempt-history .attempt-btn .attempt-sub { font-size:0.82rem; }
+.attempt-history .attempt-btn .attempt-right { margin-left:auto; display:flex; align-items:center; }
+.attempt-history .attempt-btn .badge { font-weight:700; padding:6px 10px; border-radius:8px; }
+.attempt-history .attempt-btn:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 14px 40px rgba(2,6,23,0.12); background: linear-gradient(135deg,#ffffff,#e6f4ff); }
+.attempt-history .attempt-btn.active { background: linear-gradient(135deg,#0E2A47,#00A9E0); color:#fff; box-shadow: 0 18px 48px rgba(2,6,23,0.18); border-color: rgba(255,255,255,0.06); }
+.attempt-history .attempt-btn.active .badge { background: rgba(255,255,255,0.12); color: #fff; }
+.attempt-history .attempt-btn.outline { background: linear-gradient(135deg,#ffffff,#f8fafc); }
+.attempt-history .attempt-btn { opacity:0; transform: translateY(8px) scale(.98); animation: attempt-pop .42s cubic-bezier(.2,.9,.2,1) forwards; animation-delay: var(--btn-delay, 0s); }
+@keyframes attempt-pop { from { opacity:0; transform: translateY(8px) scale(.98); } to { opacity:1; transform: translateY(0) scale(1); } }
+
+/* Icon and badge polish */
+.attempt-history .attempt-icon { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; background: linear-gradient(135deg, rgba(14,42,71,0.06), rgba(0,169,224,0.04)); color: #0E2A47; font-size: 16px; transition: transform .25s ease, background .25s ease, color .25s ease; box-shadow: 0 6px 18px rgba(2,6,23,0.06); }
+.attempt-history .attempt-btn:hover .attempt-icon { transform: scale(1.08); background: linear-gradient(135deg,#FFEDD5,#E6F4FF); }
+.attempt-history .attempt-btn.active .attempt-icon { background: linear-gradient(135deg,#FFD36B,#00D1FF); color: #08304a; box-shadow: 0 18px 40px rgba(2,6,23,0.18); }
+.score-badge { background: linear-gradient(90deg,#ffffff,#f1f5f9); border: 1px solid rgba(2,6,23,0.06); color: #0f172a; }
+.attempt-history .attempt-btn.active .score-badge { background: linear-gradient(90deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06)); }
+
+/* Subtle floating animation for icons on active */
+.attempt-history .attempt-btn.active .attempt-icon { animation: icon-bounce 1.6s ease-in-out infinite; }
+@keyframes icon-bounce { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.03); } }
+
+/* Focus styles for accessibility */
+.attempt-history .attempt-btn:focus { outline: none; box-shadow: 0 0 0 4px rgba(0,169,224,0.12); transform: translateY(-4px); }
+
+/* Card-style attempt history */
+.attempt-history-card { background: linear-gradient(135deg,#ffffff,#f8fafc); border-radius: 14px; box-shadow: 0 12px 30px rgba(2,6,23,0.06); border: 1px solid rgba(2,6,23,0.04); }
+.attempt-history-list { margin-top: 6px; }
+.attempt-item { min-width: 220px; max-width: 320px; background: linear-gradient(180deg,#ffffff,#fbfdff); border: 1px solid rgba(2,6,23,0.04); transition: transform .28s ease, box-shadow .28s ease, background .28s ease; box-shadow: 0 8px 22px rgba(2,6,23,0.04); opacity:0; transform: translateY(10px) scale(.995); animation: attempt-card-pop .42s cubic-bezier(.2,.9,.2,1) forwards; animation-delay: var(--btn-delay, 0s); }
+.attempt-item:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 18px 48px rgba(2,6,23,0.12); }
+.attempt-item.active { background: linear-gradient(135deg,#0E2A47,#00A9E0); color: #fff; }
+.attempt-item .attempt-icon { width:44px; height:44px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; background: linear-gradient(135deg,#eef2ff,#fff7ed); color:#0E2A47; font-size:18px; box-shadow: 0 6px 18px rgba(2,6,23,0.05); }
+.attempt-item.active .attempt-icon { background: linear-gradient(135deg,#FFD36B,#00D1FF); color: #072033; box-shadow: 0 16px 36px rgba(2,6,23,0.16); }
+.attempt-actions .btn { padding: 6px 10px; font-weight:700; }
+.attempt-actions .btn.btn-outline-primary { border-radius: 999px; }
+.attempt-actions .btn.btn-success { border-radius: 999px; }
+.attempt-actions .btn.btn-navy { border-radius: 999px; }
+@keyframes attempt-card-pop { from { opacity:0; transform: translateY(10px) scale(.995); } to { opacity:1; transform: translateY(0) scale(1); } }
+
+/* Single clickable attempt name button inside card */
+.attempt-open-btn { font-weight:800; padding:6px 12px; font-size:0.92rem; box-shadow: 0 8px 20px rgba(2,6,23,0.06); transition: transform .18s ease, box-shadow .18s ease; }
+.attempt-open-btn:hover { transform: translateY(-3px); }
+.attempt-item.active .attempt-open-btn { background: linear-gradient(135deg,#ffd36b,#00d1ff); color:#072033; box-shadow: 0 16px 36px rgba(2,6,23,0.16); }
+
+/* Back button style */
+.btn-back { background: linear-gradient(90deg,#0E2A47,#00A9E0); color:#fff; border: none; padding: 8px 14px; font-weight:700; border-radius:8px; box-shadow: 0 10px 26px rgba(2,6,23,0.12); transition: transform .18s ease, box-shadow .18s ease; }
+.btn-back:hover { transform: translateY(-3px); box-shadow: 0 18px 36px rgba(2,6,23,0.18); }
+.btn-back i { color: rgba(255,255,255,0.95); }
+
+/* Card entrance animation for results */
+@keyframes card-entrance-global { from { opacity: 0; transform: translateY(16px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* Enhanced page header styling for exam results */
+.page-header { background: linear-gradient(135deg, #0E2A47 0%, #00A9E0 50%, #0E2A47 100%); padding: 28px 32px; border-bottom: 4px solid #FF9933; margin-bottom: 28px; box-shadow: 0 12px 32px rgba(2,6,23,0.15); position: relative; overflow: hidden; }
+.page-header::before { content: ''; position: absolute; top: -50%; right: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%); pointer-events: none; }
+.page-header .header-content { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
+.page-header .header-left h2 { margin: 0; color: white; font-size: 2rem; font-weight: 900; letter-spacing: -0.02em; text-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.page-header .header-left p { margin: 8px 0 0 0; color: rgba(255,255,255,0.85); font-size: 0.95rem; letter-spacing: 0.02em; }
+
+/* Enhanced stat card styling */
+.stat-card { background: linear-gradient(135deg,#ffffff,#f8fafc); border-radius: 16px; padding: 24px; box-shadow: 0 10px 28px rgba(2,6,23,0.06); text-align: center; border: 1px solid rgba(2,6,23,0.04); transition: transform .28s ease, box-shadow .28s ease; border-left: 4px solid #00A9E0; }
+.stat-card:hover { transform: translateY(-6px); box-shadow: 0 18px 48px rgba(2,6,23,0.12); }
+.stat-value { font-size: 2.4rem; font-weight: 900; background: linear-gradient(135deg,#0E2A47,#00A9E0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.02em; }
+.stat-label { font-size: 0.85rem; color: #64748b; margin-top: 8px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
+
+/* Results table styling */
+.results-table { background: white; border-radius: 14px; box-shadow: 0 12px 32px rgba(2,6,23,0.06); overflow: hidden; margin-bottom: 30px; border: 1px solid rgba(2,6,23,0.04); }
+.results-table .table thead { background: linear-gradient(135deg, #0E2A47 0%, #00A9E0 100%); }
+.results-table .table thead th { color: white; font-weight: 700; padding: 16px 14px; border: none; letter-spacing: 0.02em; }
+.results-table .table tbody tr { transition: background-color .18s ease; }
+.results-table .table tbody tr:hover { background-color: rgba(0,169,224,0.04); }
+.results-table .badge { font-weight: 700; padding: 6px 10px; border-radius: 6px; }
+
+/* Floating export controls at top-right */
+.export-top-right { position: fixed; top: 28px; right: 28px; z-index: 1200; }
+.export-btn-main { position: relative; padding: 14px 22px; border: none; border-radius: 14px; font-weight: 800; font-size: 0.98rem; display: flex; align-items: center; gap: 10px; transition: all .3s cubic-bezier(.2,.9,.2,1); cursor: pointer; letter-spacing: 0.02em; background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%); color: white; box-shadow: 0 14px 40px rgba(16,185,129,0.3); text-transform: uppercase; }
+.export-btn-main:hover { transform: translateY(-6px) scale(1.05); box-shadow: 0 24px 60px rgba(16,185,129,0.45); }
+.export-btn-main:active { transform: translateY(-2px) scale(0.98); }
+.export-btn-pulse { position: absolute; inset: -2px; border-radius: 14px; background: radial-gradient(circle, rgba(16,185,129,0.4) 0%, transparent 70%); animation: export-pulse 2.4s ease-in-out infinite; }
+.export-btn-content { display: flex; align-items: center; gap: 10px; position: relative; z-index: 1; }
+.export-btn-main i { font-size: 1.2rem; transition: transform .3s ease; }
+.export-btn-main:hover i { transform: scale(1.15) rotate(8deg); }
+@keyframes export-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.7); } 50% { box-shadow: 0 0 0 12px rgba(16,185,129,0); } }
+@media (max-width: 768px) {
+  .export-top-right { top: 20px; right: 20px; }
+  .export-btn-main { padding: 12px 18px; font-size: 0.9rem; }
+}
+@media (max-width: 576px) {
+  .export-top-right { position: static; margin: 16px 0; display: flex; justify-content: flex-end; }
+  .export-btn-main { padding: 10px 16px; font-size: 0.85rem; }
+  .export-btn-main span { display: none; }
+}
+
+
+
+
 .exam-empty .exam-card i {
   color: rgba(15, 23, 42, 0.25);
   font-size: 2.5rem;

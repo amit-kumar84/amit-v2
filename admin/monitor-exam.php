@@ -111,15 +111,15 @@ $st = exam_status($ex);
   gap:16px;
 }
 .stu-card { 
-  background:linear-gradient(135deg, #e0f7ff 0%, #f0fafe 100%); 
+  background:linear-gradient(135deg, #e0f2fe 0%, #cffafe 100%); 
   border:0; 
-  border-radius:8px; 
+  border-radius:12px; 
   padding:14px; 
   position:relative; 
   transition:all .3s cubic-bezier(0.34, 1.56, 0.64, 1); 
-  border-top:4px solid #94a3b8; 
+  border-top:4px solid #06b6d4; 
   cursor:pointer; 
-  box-shadow:0 2px 8px rgba(15,23,42,.08), 0 1px 3px rgba(15,23,42,.04); 
+  box-shadow:0 4px 16px rgba(6,182,212,.12), 0 2px 6px rgba(15,23,42,.06); 
   overflow:hidden;
 }
 .stu-card::before {
@@ -133,29 +133,41 @@ $st = exam_status($ex);
 }
 .stu-card:hover::before { opacity:1; }
 .stu-card.writing { 
-  border-top-color:#f59e0b; 
-  background:linear-gradient(135deg, #dbeafe 0%, #e0f7ff 100%);
+  border-top-color:#0e7490; 
+  background:linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%);
+  box-shadow:0 6px 20px rgba(6,182,212,.18);
 }
 .stu-card.writing:hover { 
-  box-shadow:0 8px 24px rgba(245,158,11,.25), 0 2px 8px rgba(15,23,42,.08);
-  transform:translateY(-4px) scale(1.02);
+  box-shadow:0 12px 32px rgba(6,182,212,.3), 0 2px 8px rgba(15,23,42,.08);
+  transform:translateY(-6px) scale(1.02);
 }
 .stu-card.submitted { 
-  border-top-color:#16a34a; 
-  background:linear-gradient(135deg, #dcfce7 0%, #e0f7ff 100%);
+  border-top-color:#0369a1; 
+  background:linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+  box-shadow:0 6px 20px rgba(3,105,161,.15);
 }
 .stu-card.submitted:hover { 
-  box-shadow:0 8px 24px rgba(22,163,74,.25), 0 2px 8px rgba(15,23,42,.08);
-  transform:translateY(-4px) scale(1.02);
+  box-shadow:0 12px 32px rgba(3,105,161,.25), 0 2px 8px rgba(15,23,42,.08);
+  transform:translateY(-6px) scale(1.02);
 }
+.monitor-locked {
+  background:linear-gradient(135deg,#fef3c7,#fef9e7);
+  border:2px solid #fbbf24;
+  border-radius:8px;
+  padding:24px;
+  text-align:center;
+  color:#92400e;
+}
+.monitor-locked .fw-bold { font-size:1.1rem; margin-bottom:8px; }
 .stu-card.absent { 
-  border-top-color:#dc2626; 
-  background:linear-gradient(135deg, #fee2e2 0%, #e0f7ff 100%);
-  opacity:0.75;
+  border-top-color:#0c4a6e; 
+  background:linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+  opacity:0.8;
+  box-shadow:0 4px 16px rgba(12,74,110,.1);
 }
 .stu-card.absent:hover { 
-  box-shadow:0 8px 24px rgba(220,38,38,.2), 0 2px 8px rgba(15,23,42,.08);
-  transform:translateY(-4px) scale(1.02);
+  box-shadow:0 12px 32px rgba(12,74,110,.15), 0 2px 8px rgba(15,23,42,.08);
+  transform:translateY(-6px) scale(1.02);
   opacity:1;
 }
 .stu-card.closed-highlight { 
@@ -216,35 +228,37 @@ $st = exam_status($ex);
   width:72px; 
   height:92px; 
   object-fit:cover; 
-  border:2px solid #cbd5e1; 
-  border-radius:6px; 
+  border:3px solid #0891b2; 
+  border-radius:8px; 
   display:block; 
   margin:0 auto 10px;
   transition:all .3s;
-  box-shadow:0 4px 12px rgba(0,0,0,.1);
+  box-shadow:0 6px 16px rgba(6,182,212,.2);
 }
 .stu-card:hover .stu-photo {
-  border-color:#f59e0b;
-  box-shadow:0 6px 16px rgba(245,158,11,.2);
-  transform:scale(1.05);
+  border-color:#06b6d4;
+  box-shadow:0 8px 20px rgba(6,182,212,.3);
+  transform:scale(1.08);
 }
 .stu-no-photo { 
   width:72px; 
   height:92px; 
-  border:2px dashed #cbd5e1; 
+  border:2px dashed #06b6d4; 
   display:flex; 
   align-items:center; 
   justify-content:center; 
-  color:#94a3b8; 
+  color:#0891b2; 
   font-size:11px; 
   margin:0 auto 10px; 
-  border-radius:6px;
-  background:linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius:8px;
+  background:linear-gradient(135deg, #ecf8fb 0%, #e0f7ff 100%);
   transition:all .3s;
+  font-weight:700;
 }
 .stu-card:hover .stu-no-photo {
-  border-color:#f59e0b;
-  background:linear-gradient(135deg, #fffbf0 0%, #fff9f5 100%);
+  border-color:#0891b2;
+  background:linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%);
+  color:#0369a1;
 }
 .stu-meta { 
   font-size:11px; 
@@ -252,8 +266,8 @@ $st = exam_status($ex);
   padding:2px 0;
 }
 .stu-meta .name { 
-  font-weight:700; 
-  color:#0f172a; 
+  font-weight:800; 
+  color:#0c4a6e; 
   font-size:13px; 
   margin-bottom:4px; 
   text-align:center;
@@ -261,21 +275,40 @@ $st = exam_status($ex);
   transition:color .2s;
 }
 .stu-card:hover .stu-meta .name {
-  color:#f59e0b;
+  color:#0369a1;
 }
 .stu-meta .roll { 
   font-family:monospace; 
-  color:#475569; 
+  color:#0891b2; 
   text-align:center;
   display:block;
   margin-bottom:2px;
   font-size:10px;
+  font-weight:700;
 }
 .stu-meta .dob { 
-  color:#64748b; 
+  color:#0c4a6e; 
   text-align:center; 
   font-size:10px;
   display:block;
+}
+.stu-meta .field {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:.35rem;
+  align-items:center;
+  margin:6px 0 0;
+  font-size:11px;
+}
+.stu-meta .field .label {
+  color:#0c4a6e;
+  font-weight:700;
+  opacity:.85;
+}
+.stu-meta .field .value {
+  color:#0f172a;
+  font-weight:600;
 }
 .stu-badge { 
   position:absolute; 
@@ -292,19 +325,19 @@ $st = exam_status($ex);
   animation:bounce-in .4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .stu-badge.writing { 
-  background:linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  background:linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
   color:#fff;
-  box-shadow:0 4px 12px rgba(245,158,11,.3);
+  box-shadow:0 4px 12px rgba(6,182,212,.4);
 }
 .stu-badge.submitted { 
-  background:linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  background:linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
   color:#fff;
-  box-shadow:0 4px 12px rgba(16,185,129,.3);
+  box-shadow:0 4px 12px rgba(3,105,161,.4);
 }
 .stu-badge.absent { 
-  background:linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+  background:linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color:#fff;
-  box-shadow:0 4px 12px rgba(239,68,68,.3);
+  box-shadow:0 4px 12px rgba(99,102,241,.35);
 }
 .viol-indicator { 
   position:absolute; 
@@ -470,12 +503,44 @@ $st = exam_status($ex);
   animation:bounce-in .8s ease-out;
 }
 
-/* Notification bell */
-.notif-bell { position:relative; background:#fff; border:1px solid #cbd5e1; border-radius:50%; width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; }
-.notif-bell:hover { background:#f1f5f9; }
-.notif-bell.ring { animation:ring .6s ease-in-out 3; }
+/* Controls positioning */
+.monitor-hero { position: relative; }
+.monitor-controls-top-right {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  z-index: 100;
+}
+
+.notif-bell {
+  position: relative;
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  border: 2px solid #0891b2;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color:#fff;
+  box-shadow:0 12px 28px rgba(6,182,212,.22);
+  transition:transform .25s ease, box-shadow .25s ease, background .25s ease;
+}
+
+.notif-bell:hover {
+  transform:translateY(-2px);
+  box-shadow:0 16px 34px rgba(6,182,212,.28);
+}
+
+.notif-bell .count { position:absolute; top:-4px; right:-4px; background:#0ea5e9; color:#fff; border-radius:50%; min-width:20px; height:20px; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 5px; }
+.notif-bell.ring {
+  animation: ring .6s ease-in-out 3;
+}
 @keyframes ring { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-15deg)} 75%{transform:rotate(15deg)} }
-.notif-bell .count { position:absolute; top:-4px; right:-4px; background:#dc2626; color:#fff; border-radius:50%; min-width:20px; height:20px; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 5px; }
 .notif-panel { position:fixed; top:70px; right:20px; width:420px; max-height:70vh; overflow-y:auto; background:#fff; border:1px solid #e2e8f0; border-radius:4px; box-shadow:0 10px 30px rgba(15,23,42,.2); z-index:3000; display:none; }
 .notif-panel.open { display:block; }
 .notif-panel header { padding:12px 16px; border-bottom:1px solid #e2e8f0; background:#f8fafc; display:flex; justify-content:space-between; align-items:center; }
@@ -515,19 +580,21 @@ $st = exam_status($ex);
   <div class="d-flex gap-2 align-items-center flex-wrap">
     <div class="stat-chip"><div class="num" id="k-reg">0</div><div class="lbl">Registered</div></div>
     <div class="stat-chip"><div class="num text-warning" id="k-live">0</div><div class="lbl">Present</div></div>
-    <div class="stat-chip"><div class="num text-success" id="k-sub">0</div><div class="lbl">Done</div></div>
+    <div class="stat-chip"><div class="num text-success" id="k-sub">0</div><div class="lbl">Submitted</div></div>
     <div class="stat-chip"><div class="num text-danger" id="k-abs">0</div><div class="lbl">Absent</div></div>
     <div class="stat-chip" style="background:rgba(220,38,38,0.2)"><div class="num" id="k-viol">0</div><div class="lbl">Violations</div></div>
     <div class="text-center">
       <div class="timer-pill" id="timer">--:--:--</div>
       <div style="font-size:10px; opacity:.7; margin-top:3px" id="timer-lbl">Status</div>
     </div>
+  </div>
+  <div class="monitor-controls-top-right">
     <button class="notif-bell" onclick="toggleNotifPanel()" title="Alerts">
-      <i class="fas fa-bell text-warning"></i>
+      <i class="fas fa-bell"></i>
       <span class="count" id="notif-count" style="display:none">0</span>
     </button>
     <div class="dropdown">
-      <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-file-export me-1"></i>Export</button>
+      <button class="btn btn-sm dropdown-toggle" style="background: linear-gradient(135deg, #0369a1, #0284c7); color: white; border: none; border-radius: 999px; font-weight: 700; box-shadow: 0 6px 18px rgba(3,105,161,.2); padding: .45rem .95rem;" data-bs-toggle="dropdown"><i class="fas fa-download me-1"></i>Export</button>
       <ul class="dropdown-menu dropdown-menu-end">
         <li><a class="dropdown-item" href="<?= url('admin/export-classroom.php?exam_id='.$eid) ?>"><i class="fas fa-file-csv me-1 text-success"></i>Classroom Roster (CSV)</a></li>
         <li><a class="dropdown-item" target="_blank" href="<?= url('admin/export-classroom-pdf.php?exam_id='.$eid) ?>"><i class="fas fa-file-pdf me-1 text-danger"></i>Attendance Sheet (Print / PDF)</a></li>
@@ -561,13 +628,13 @@ $st = exam_status($ex);
       <select id="roster-filter" class="form-select form-select-sm" style="width:150px">
         <option value="all">All</option>
         <option value="writing">Present</option>
-        <option value="submitted">Done</option>
+        <option value="submitted">Submitted</option>
         <option value="absent">Absent</option>
       </select>
     </div>
   </div>
   <div id="classroom-wrap">
-    <div class="classroom" id="classroom"><div class="text-muted text-center py-4 w-100">Loading students…</div></div>
+    <div class="classroom" id="classroom"><div class="text-muted text-center py-5 w-100"><i class="fas fa-spinner fa-spin fa-2x mb-3"></i><div>Loading students…</div></div></div>
   </div>
 </div>
 
@@ -618,9 +685,8 @@ $st = exam_status($ex);
         <div id="attempt-options" style="display:none; margin-top:10px;">
           <div id="single-attempt-btn"></div>
           <div id="multi-attempts" style="display:none;">
-            <p class="mb-2">Select an attempt to view:</p>
+            <p class="mb-2">Attempt history:</p>
             <div id="attempt-radios"></div>
-            <button id="view-selected-btn" class="btn btn-primary btn-sm mt-2" onclick="viewSelectedAttempt()">View Selected</button>
           </div>
         </div>
         <div class="small text-secondary mt-1" id="am-note">Answer key available only after the exam is closed.</div>
@@ -634,6 +700,8 @@ $st = exam_status($ex);
 
 <script>
 const EXAM_ID = <?= (int)$eid ?>;
+const EXAM_NAME = <?= json_encode($ex['exam_name'] ?? '') ?>;
+const EXAM_CODE = <?= json_encode($ex['exam_code'] ?? '') ?>;
 const EXAM_START = <?= strtotime($ex['start_time']) * 1000 ?>;
 const EXAM_END = <?= strtotime($ex['end_time']) * 1000 ?>;
 const FEED_URL = <?= json_encode(url('api/monitor-feed.php')) ?>;
@@ -704,61 +772,97 @@ setInterval(updateTimer, 1000); updateTimer();
 async function fetchFeed() {
   try {
     const r = await fetch(FEED_URL + '?exam_id=' + EXAM_ID, {credentials:'same-origin'});
+    if (!r.ok) {
+      document.getElementById('classroom').innerHTML = `<div class="alert alert-danger w-100"><i class="fas fa-exclamation-triangle me-2"></i>Failed to load students (HTTP ${r.status})</div>`;
+      console.error('Feed request failed:', r.status);
+      return;
+    }
     const data = await r.json();
-    if (!data.ok) return;
+    if (!data.ok) {
+      document.getElementById('classroom').innerHTML = `<div class="alert alert-warning w-100"><i class="fas fa-info-circle me-2"></i>${data.error || 'Unable to fetch student data'}</div>`;
+      console.warn('Feed API error:', data.error);
+      return;
+    }
     const phase = data.exam_state || getPhase();
     document.getElementById('k-reg').textContent = data.registered;
-    document.getElementById('k-live').textContent = phase === 'upcoming' ? 0 : data.writing;
+    document.getElementById('k-live').textContent = phase === 'upcoming' ? 0 : data.writing + data.submitted;
     document.getElementById('k-sub').textContent = phase === 'upcoming' ? 0 : data.submitted;
     document.getElementById('k-abs').textContent = phase === 'upcoming' ? 0 : data.absent;
     document.getElementById('k-viol').textContent = phase === 'upcoming' ? 0 : data.total_violations;
     if (phase === 'upcoming') {
-      document.getElementById('classroom').innerHTML = '<div class="monitor-locked w-100"><div class="fw-bold mb-1">Classroom view is not live yet</div><div>The roster will appear automatically when the exam starts.</div></div>';
+      document.getElementById('classroom').innerHTML = '<div class="monitor-locked w-100"><div class="fw-bold mb-1"><i class="fas fa-clock me-2"></i>Classroom view is not live yet</div><div>The roster will appear automatically when the exam starts.</div></div>';
     } else {
       rosterPhase = phase;
+      if (!data.students || data.students.length === 0) {
+        document.getElementById('classroom').innerHTML = '<div class="text-muted text-center py-4 w-100"><i class="fas fa-users me-2"></i>No students assigned to this exam yet</div>';
+        return;
+      }
       renderRoster(data.students, phase);
     }
     document.getElementById('last-sync').textContent = new Date().toLocaleTimeString();
-  } catch(e) { console.warn('feed error', e); }
+  } catch(e) { 
+    console.error('Feed fetch error:', e);
+    document.getElementById('classroom').innerHTML = `<div class="alert alert-danger w-100"><i class="fas fa-exclamation-circle me-2"></i>Error loading students: ${e.message}</div>`;
+  }
 }
 
 function renderRoster(students, phase) {
+  if (!Array.isArray(students)) {
+    console.error('Students is not an array:', students);
+    document.getElementById('classroom').innerHTML = '<div class="alert alert-danger w-100">Invalid student data structure</div>';
+    return;
+  }
+  
   const isClosed = phase === 'closed';
   const search = (document.getElementById('roster-search').value || '').trim().toLowerCase();
   const filter = document.getElementById('roster-filter').value;
   const wrap = document.getElementById('classroom');
+  
   const filtered = students.filter(s => {
     if (filter !== 'all' && s.status !== filter) return false;
     if (search && !(s.name.toLowerCase().includes(search) || (s.roll||'').toLowerCase().includes(search))) return false;
     return true;
   });
-  if (!filtered.length) { wrap.innerHTML = '<div class="text-muted text-center py-4 w-100">No students match.</div>'; return; }
-    const cardHtml = (items) => items.map(s => {
-      const pic = s.photo_url
-        ? `<img class="stu-photo" src="${s.photo_url}" alt="">`
-        : `<div class="stu-no-photo">No Photo</div>`;
-      const viol = (s.violations||0) > 0
-        ? `<span class="viol-indicator"><i class="fas fa-triangle-exclamation me-1"></i>${s.violations}</span>` : '';
-      const badge = `<span class="stu-badge ${s.status}">${s.status_label}</span>`;
-      const stamp = s.status === 'absent' ? `<div class="absent-stamp"><img src="<?= url('assets/icons/BEL-Logo-Trnsprent.png') ?>" alt="BEL"></div>` : '';
-      const closedClass = isClosed ? 'closed-highlight' : '';
-      const attemptInfo = isClosed && s.attempt_count > 0 ? `<div class="small text-muted mt-1">Attempts: ${s.attempt_count}</div>` : '';
-      const actionButton = isClosed && s.attempt_count > 0
-        ? `<div class="card-actions"><button class="btn btn-sm btn-outline-primary" data-sid="${s.id}">View Results</button></div>`
-        : '';
-      return `<div class="stu-card ${s.status} ${closedClass}" data-sid="${s.id}" data-attempt-count="${s.attempt_count || 0}" data-attempt-ids="${(s.attempt_ids || []).join(',')}" data-attempt-details="${(s.attempt_details || []).join(',')}">
-        ${stamp}${badge}${viol}
-        ${pic}
-        <div class="stu-meta">
-          <div class="name">${escapeHtml(s.name)}</div>
-          <div class="roll">${escapeHtml(s.roll||'—')}</div>
-          <div class="dob">DOB: ${escapeHtml(s.dob||'—')}</div>
-          ${attemptInfo}
-        </div>
-        ${actionButton}
-      </div>`;
-    }).join('');
-  wrap.innerHTML = cardHtml(filtered);
+  
+  if (!filtered.length) { 
+    wrap.innerHTML = '<div class="text-muted text-center py-4 w-100"><i class="fas fa-filter me-2"></i>No students match your filters.</div>'; 
+    return; 
+  }
+  
+  const cardHtml = (items) => items.map(s => {
+    const pic = s.photo_url
+      ? `<img class="stu-photo" src="${s.photo_url}" alt="">`
+      : `<div class="stu-no-photo">No Photo</div>`;
+    const viol = (s.violations||0) > 0
+      ? `<span class="viol-indicator"><i class="fas fa-triangle-exclamation me-1"></i>${s.violations}</span>` : '';
+    const badge = `<span class="stu-badge ${s.status}">${s.status_label}</span>`;
+    const stamp = s.status === 'absent' ? `<div class="absent-stamp"><img src="<?= url('assets/icons/BEL-Logo-Trnsprent.png') ?>" alt="BEL"></div>` : '';
+    const closedClass = isClosed ? 'closed-highlight' : '';
+    const attemptInfo = isClosed && s.attempt_count > 0 ? `<div class="small text-muted mt-1"><i class="fas fa-clipboard me-1"></i>Attempts: ${s.attempt_count}</div>` : '';
+    const actionButton = isClosed && s.attempt_count > 0
+      ? `<div class="card-actions"><button class="btn btn-sm btn-outline-primary" data-sid="${s.id}"><i class="fas fa-chart-bar me-1"></i>View Results</button></div>`
+      : '';
+    return `<div class="stu-card ${s.status} ${closedClass}" data-sid="${s.id}" data-attempt-count="${s.attempt_count || 0}" data-attempt-history='${escapeHtml(JSON.stringify(s.attempt_history || []))}'>
+      ${stamp}${badge}${viol}
+      ${pic}
+      <div class="stu-meta">
+        <div class="field"><span class="label">Name:</span><span class="value">${escapeHtml(s.name)}</span></div>
+        <div class="field"><span class="label">Roll No:</span><span class="value">${escapeHtml(s.roll||'—')}</span></div>
+        <div class="field"><span class="label">DOB:</span><span class="value">${escapeHtml(s.dob||'—')}</span></div>
+        <div class="field"><span class="label">Exam Code:</span><span class="value">${escapeHtml(EXAM_CODE || '—')}</span></div>
+        <div class="field"><span class="label">Exam Name:</span><span class="value">${escapeHtml(EXAM_NAME || '—')}</span></div>
+        ${attemptInfo}
+      </div>
+      ${actionButton}
+    </div>`;
+  }).join('');
+  
+  try {
+    wrap.innerHTML = cardHtml(filtered);
+  } catch(e) {
+    console.error('Error rendering roster:', e);
+    wrap.innerHTML = '<div class="alert alert-danger w-100"><i class="fas fa-exclamation-circle me-2"></i>Error displaying students: ' + e.message + '</div>';
+  }
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function loadStoredNotifs() {
@@ -851,6 +955,12 @@ function openStudentCard(evt) {
   const card = evt.target.closest('.stu-card');
   if (!card) return;
   const attemptCount = parseInt(card.dataset.attemptCount) || 0;
+  let attemptHistory = [];
+  try {
+    attemptHistory = JSON.parse(card.dataset.attemptHistory || '[]');
+  } catch (e) {
+    attemptHistory = [];
+  }
   if (rosterPhase === 'closed' && attemptCount > 0) {
     // Open modal with attempt options
     const studentName = card.querySelector('.name')?.textContent || '—';
@@ -865,26 +975,26 @@ function openStudentCard(evt) {
       ? `<img class="stu-photo" src="${card.querySelector('.stu-photo').src}" alt="">`
       : '<div class="no-pic">No Photo</div>';
     
-    const attemptIds = card.dataset.attemptIds.split(',').map(id => parseInt(id));
-    const attemptDetails = card.dataset.attemptDetails.split(',');
-    
     const optionsDiv = document.getElementById('attempt-options');
     const singleBtn = document.getElementById('single-attempt-btn');
     const multiDiv = document.getElementById('multi-attempts');
     const radiosDiv = document.getElementById('attempt-radios');
     
-    if (attemptCount === 1) {
-      singleBtn.innerHTML = `<a class="btn btn-primary" href="${ATTEMPT_URL}?id=${attemptIds[0]}" target="_blank">View Result & Answer Key</a>`;
+    if (attemptHistory.length === 1) {
+      const first = attemptHistory[0];
+      singleBtn.innerHTML = `<a class="btn btn-primary" href="${ATTEMPT_URL}?id=${first.id}" target="_blank">View Result & Answer Key · Attempt #${first.attempt_no}</a>`;
       singleBtn.style.display = 'block';
       multiDiv.style.display = 'none';
     } else {
-      radiosDiv.innerHTML = attemptIds.map((id, i) => {
-        const detail = attemptDetails[i] || '';
-        const [score, date] = detail.split('|');
-        return `<label class="d-block mb-2">
-          <input type="radio" name="attempt-select" value="${id}"> 
-          Attempt ${i+1}: ${score} on ${date}
-        </label>`;
+      radiosDiv.innerHTML = attemptHistory.map(a => {
+        const label = a.score_total || '—';
+        return `<div class="border rounded p-2 mb-2 bg-light d-flex justify-content-between align-items-center gap-2">
+          <div>
+            <div class="fw-semibold">Attempt #${a.attempt_no}</div>
+            <div class="small text-muted">${escapeHtml(label)} · ${escapeHtml(a.submitted_at || '')}</div>
+          </div>
+          <a class="btn btn-sm btn-primary" href="${ATTEMPT_URL}?id=${a.id}" target="_blank">View Result</a>
+        </div>`;
       }).join('');
       multiDiv.style.display = 'block';
       singleBtn.style.display = 'none';
@@ -911,13 +1021,6 @@ function openStudentCard(evt) {
   document.getElementById('answer-modal-wrap').classList.add('open');
 }
 function closeAnswerModal() { document.getElementById('answer-modal-wrap').classList.remove('open'); }
-
-function viewSelectedAttempt() {
-  const selected = document.querySelector('input[name="attempt-select"]:checked');
-  if (selected) {
-    window.open(`${ATTEMPT_URL}?id=${selected.value}`, '_blank');
-  }
-}
 
 document.getElementById('classroom').addEventListener('click', openStudentCard);
 

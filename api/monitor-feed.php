@@ -24,15 +24,14 @@ $stmt = $pdo->prepare(
           a.id AS attempt_id, a.status, a.started_at, a.submitted_at,
           (SELECT COUNT(*) FROM violations WHERE user_id=u.id AND attempt_id=a.id) AS violations,
           (SELECT COUNT(*) FROM attempts WHERE user_id=u.id AND exam_id=? AND status="submitted") AS attempt_count,
-          (SELECT GROUP_CONCAT(id ORDER BY started_at DESC) FROM attempts WHERE user_id=u.id AND exam_id=? AND status="submitted") AS attempt_ids,
-          (SELECT GROUP_CONCAT(CONCAT(score, "/", total, "|", DATE_FORMAT(started_at, "%Y-%m-%d %H:%i")) ORDER BY started_at DESC) FROM attempts WHERE user_id=u.id AND exam_id=? AND status="submitted") AS attempt_details
+                    (SELECT GROUP_CONCAT(CONCAT(attempt_no, "|", id, "|", score, "/", total, "|", DATE_FORMAT(submitted_at, "%Y-%m-%d %H:%i")) ORDER BY attempt_no ASC SEPARATOR "||") FROM attempts WHERE user_id=u.id AND exam_id=? AND status="submitted") AS attempt_history
      FROM users u
      JOIN exam_assignments ea ON ea.user_id = u.id
      LEFT JOIN attempts a ON a.user_id = u.id AND a.exam_id = ?
                           AND a.id = (SELECT MAX(id) FROM attempts WHERE user_id=u.id AND exam_id=?)
     WHERE ea.exam_id = ? AND u.deleted_at IS NULL
     ORDER BY u.name');
-$stmt->execute([$eid, $eid, $eid, $eid, $eid, $eid]);
+$stmt->execute([$eid, $eid, $eid, $eid, $eid]);
 $rows = $stmt->fetchAll();
 
 $registered = count($rows);
@@ -41,20 +40,31 @@ $students = [];
 if ($state !== 'upcoming') {
     foreach ($rows as $r) {
         $attempt_count = (int)$r['attempt_count'];
-        $attempt_ids = $r['attempt_ids'] ? explode(',', $r['attempt_ids']) : [];
-        $attempt_details = $r['attempt_details'] ? explode(',', $r['attempt_details']) : [];
+        $attempt_history = [];
+        if (!empty($r['attempt_history'])) {
+            foreach (explode('||', $r['attempt_history']) as $entry) {
+                $parts = explode('|', $entry, 4);
+                if (count($parts) < 4) continue;
+                $attempt_history[] = [
+                    'attempt_no' => (int)$parts[0],
+                    'id' => (int)$parts[1],
+                    'score_total' => $parts[2],
+                    'submitted_at' => $parts[3],
+                ];
+            }
+        }
         $status = 'absent'; $label = 'Absent';
         if ($state === 'closed') {
             if ($attempt_count > 0) {
                 $status = 'submitted';
-                $label = 'Done';
+                $label = 'Submitted';
                 $submitted++;
             } else {
                 $absent++;
             }
         } else {
             if ($r['status'] === 'in_progress') { $status = 'writing';   $label = 'Present';   $writing++; }
-            elseif ($r['status'] === 'submitted') { $status = 'submitted'; $label = 'Done'; $submitted++; }
+            elseif ($r['status'] === 'submitted') { $status = 'submitted'; $label = 'Submitted'; $submitted++; }
             else { $absent++; }
         }
         $totalViol += (int)$r['violations'];
@@ -70,8 +80,7 @@ if ($state !== 'upcoming') {
             'started_at' => $r['started_at'],
             'submitted_at' => $r['submitted_at'],
             'attempt_count' => $attempt_count,
-            'attempt_ids' => array_map('intval', $attempt_ids),
-            'attempt_details' => $attempt_details,
+            'attempt_history' => $attempt_history,
         ];
     }
 }

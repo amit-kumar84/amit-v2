@@ -23,11 +23,17 @@ try {
         $used->execute([$u['id'], $e['id']]);
         $e['attempts_used'] = (int)$used->fetchColumn();
         $e['attempts_left'] = max(0, (int)$e['max_attempts'] - $e['attempts_used']);
-        $e['can_start'] = $e['status'] === 'active' && $e['attempts_left'] > 0 && (int)$e['qcount'] > 0;
+        $e['can_start'] = $e['status'] === 'join' && $e['attempts_left'] > 0 && (int)$e['qcount'] > 0;
         $e['start_time_label'] = fmt_dt($e['start_time']);
         $e['end_time_label'] = fmt_dt($e['end_time']);
         $e['qcount'] = (int)$e['qcount'];
         $e['duration_minutes'] = (int)$e['duration_minutes'];
+        $e['join_window_minutes'] = max(0, (int)$e['join_window_minutes']);
+        $e['join_window_start'] = $e['join_window_minutes'] > 0 ? date('Y-m-d H:i:s', strtotime($e['start_time']) - $e['join_window_minutes'] * 60) : null;
+        $e['join_window_start_label'] = $e['join_window_start'] ? fmt_dt($e['join_window_start']) : null;
+        $e['join_window_start_ts'] = $e['join_window_start'] ? strtotime($e['join_window_start']) * 1000 : null;
+        $e['start_ts'] = strtotime($e['start_time']) * 1000;
+        $e['end_ts'] = strtotime($e['end_time']) * 1000;
     }
     unset($e);
 
