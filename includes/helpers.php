@@ -163,6 +163,17 @@ function exam_status(array $e): string {
     return 'active';
 }
 
+function exam_can_start_now(array $e): bool {
+    $joinWindow = max(0, (int)($e['join_window_minutes'] ?? 0));
+    $status = exam_status($e);
+
+    if ($joinWindow > 0) {
+        return $status === 'join';
+    }
+
+    return in_array($status, ['join', 'active'], true);
+}
+
 // Save uploaded candidate photo to /uploads/photos. Returns relative URL path or null.
 function save_candidate_photo(array $file, string $rollSlug): ?string {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) return null;

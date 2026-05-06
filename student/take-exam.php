@@ -19,7 +19,15 @@ if (!$exam) die('Exam not found');
 if (!is_exam_assigned((int)$u['id'], $eid)) die('This examination is not assigned to your account.');
 
 $now = time();
-if ($now < strtotime($exam['start_time']) || $now > strtotime($exam['end_time'])) die('Exam not in active window');
+$startTs = strtotime($exam['start_time']);
+$endTs = strtotime($exam['end_time']);
+$joinWindow = max(0, (int)($exam['join_window_minutes'] ?? 0));
+if ($joinWindow > 0) {
+  $joinStartTs = $startTs - ($joinWindow * 60);
+  if ($now < $joinStartTs || $now >= $startTs) die('Exam not in join window');
+} else {
+  if ($now < $startTs || $now > $endTs) die('Exam not in active window');
+}
 $used = db()->prepare('SELECT COUNT(*) FROM attempts WHERE user_id=? AND exam_id=? AND status="submitted"');
 $used->execute([$u['id'], $eid]);
 if ((int)$used->fetchColumn() >= (int)$exam['max_attempts']) die('Max attempts reached');

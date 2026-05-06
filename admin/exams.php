@@ -31,7 +31,18 @@ if ($_SERVER['REQUEST_METHOD']==='POST') { csrf_check();
     }
     $joinWindow = max(0, (int)($_POST['join_window_minutes'] ?? 0));
     $startTime = str_replace('T',' ', $_POST['start_time']).':00';
-    $endTime = date('Y-m-d H:i:s', strtotime($startTime) + ((int)$_POST['duration_minutes']) * 60);
+    $manualEndTime = trim($_POST['end_time'] ?? '');
+    $endTime = $joinWindow > 0
+      ? date('Y-m-d H:i:s', strtotime($startTime) + ((int)$_POST['duration_minutes']) * 60)
+      : ($manualEndTime !== '' ? str_replace('T',' ', $manualEndTime) . (strlen($manualEndTime) === 16 ? ':00' : '') : date('Y-m-d H:i:s', strtotime($startTime) + ((int)$_POST['duration_minutes']) * 60));
+    if ($joinWindow <= 0 && $manualEndTime === '') {
+      flash('End date is required when join window is turned off.', 'error');
+      redirect(url('admin/exams.php'));
+    }
+    if (strtotime($endTime) <= strtotime($startTime)) {
+      flash('End date must be after the start time.', 'error');
+      redirect(url('admin/exams.php'));
+    }
     $d = [trim($_POST['exam_name']), $exam_code, (int)$_POST['duration_minutes'], $joinWindow, (int)$_POST['max_attempts'],
           $startTime, $endTime,
           (int)($_POST['total_marks'] ?: 0), trim($_POST['instructions']??'')];
@@ -281,9 +292,20 @@ if (!empty($me['is_super'])) {
           </div>
           <div class="col-md-6">
             <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(14,165,233,0.04), rgba(96,165,250,0.04)); border:1px solid rgba(59,130,246,0.15);">
-              <label class="form-label-xs mb-2"><i class="fas fa-door-open me-2" style="color:#2563eb;"></i>Join window before start <span class="text-muted small" style="font-weight:400; text-transform:none;">— optional</span></label>
-              <input id="ef-join" name="join_window_minutes" type="number" min="0" value="10" class="form-control" style="border: 2px solid rgba(59,130,246,0.15); padding: 10px 14px; transition: all 0.3s ease;">
-              <div class="small text-muted mt-2">Allow students to join up to this many minutes before the scheduled start.</div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="ef-join-enabled" checked>
+                <label class="form-check-label fw-bold" for="ef-join-enabled"><i class="fas fa-door-open me-2" style="color:#2563eb;"></i>Open join window</label>
+              </div>
+              <div id="ef-join-wrap">
+                <label class="form-label-xs mb-2">Join window before start <span class="text-muted small" style="font-weight:400; text-transform:none;">— optional</span></label>
+                <input id="ef-join" name="join_window_minutes" type="number" min="0" value="10" class="form-control" style="border: 2px solid rgba(59,130,246,0.15); padding: 10px 14px; transition: all 0.3s ease;">
+                <div class="small text-muted mt-2">Allow students to join up to this many minutes before the scheduled start.</div>
+              </div>
+              <div id="ef-end-wrap" class="d-none">
+                <label class="form-label-xs mb-2">Exam end date</label>
+                <input id="ef-en" name="end_time" type="datetime-local" class="form-control" style="border: 2px solid rgba(59,130,246,0.15); padding: 10px 14px; background:#fff;">
+                <div id="ef-end-hint" class="small text-muted mt-2">This is auto-calculated from the selected start time and duration.</div>
+              </div>
             </div>
           </div>
         </div>
@@ -397,11 +419,13 @@ function openCreateExamModal() {
   document.getElementById('ef-code').value = '';
   document.getElementById('ef-dur').value = 30;
   document.getElementById('ef-join').value = 10;
+  document.getElementById('ef-join-enabled').checked = true;
   document.getElementById('ef-att').value = 1;
   document.getElementById('ef-tot').value = '';
   document.getElementById('ef-ins').value = '';
   document.getElementById('ef-st').value = new Date(Date.now() + 3600000).toISOString().slice(0,16); // 1 hour from now
   document.getElementById('ef-title').textContent = 'Create Exam';
+  updateExamTimingPreview();
   
   // Show the modal
   if (typeof bootstrap !== 'undefined') {
@@ -419,12 +443,15 @@ function openCreateExamModal() {
 
 function fillForm(e){ e=e||{}; document.getElementById('ef-id').value=e.id||'';
   document.getElementById('ef-name').value=e.exam_name||''; document.getElementById('ef-dur').value=e.duration_minutes||30;
-  document.getElementById('ef-join').value = (typeof e.join_window_minutes !== 'undefined' && e.join_window_minutes !== null) ? e.join_window_minutes : 10;
+  const joinEnabled = (typeof e.join_window_minutes !== 'undefined' && e.join_window_minutes !== null) ? parseInt(e.join_window_minutes) > 0 : true;
+  document.getElementById('ef-join-enabled').checked = joinEnabled;
+  document.getElementById('ef-join').value = joinEnabled ? ((typeof e.join_window_minutes !== 'undefined' && e.join_window_minutes !== null) ? e.join_window_minutes : 10) : 0;
   document.getElementById('ef-code').value=e.exam_code||'';
   document.getElementById('ef-att').value=e.max_attempts||1; document.getElementById('ef-tot').value=e.total_marks||'';
   document.getElementById('ef-ins').value=e.instructions||''; document.getElementById('ef-title').textContent=e.id?'Edit Exam':'Create Exam';
   document.getElementById('ef-st').value=e.start_time?e.start_time.replace(' ','T').slice(0,16):'';
-  document.getElementById('ef-en').value=e.end_time?e.end_time.replace(' ','T').slice(0,16):'';
+  const endInput = document.getElementById('ef-en');
+  if (endInput) endInput.value = e.end_time ? e.end_time.replace(' ','T').slice(0,16) : '';
   // Proctor defaults — all-ON for new, or whatever was stored for existing exam
   document.getElementById('ef-ffs').checked = (e.force_fullscreen === undefined || e.force_fullscreen === null) ? true : !!parseInt(e.force_fullscreen);
   document.getElementById('ef-maxv').value = e.max_violations || 5;
@@ -446,6 +473,51 @@ function fillForm(e){ e=e||{}; document.getElementById('ef-id').value=e.id||'';
   if (fieldset) fieldset.disabled = !canProctor;
   if (banner) banner.classList.toggle('d-none', canProctor);
   const warn = document.getElementById('ef-warn'); warn.classList.add('d-none'); warn.textContent = '';
+  updateExamTimingPreview();
+}
+
+function formatLocalDateTime(value) {
+  if (!value) return '—';
+  const dt = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(dt.getTime())) return '—';
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(dt.getDate())}-${pad(dt.getMonth()+1)}-${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+}
+
+function updateExamTimingPreview() {
+  const startInput = document.getElementById('ef-st');
+  const durInput = document.getElementById('ef-dur');
+  const joinToggle = document.getElementById('ef-join-enabled');
+  const joinWrap = document.getElementById('ef-join-wrap');
+  const endWrap = document.getElementById('ef-end-wrap');
+  const endInput = document.getElementById('ef-en');
+  const endHint = document.getElementById('ef-end-hint');
+  const joinInput = document.getElementById('ef-join');
+  if (!startInput || !durInput || !joinToggle || !joinWrap || !endWrap || !endInput || !joinInput) return;
+
+  const joinOn = !!joinToggle.checked;
+  joinWrap.classList.toggle('d-none', !joinOn);
+  endWrap.classList.toggle('d-none', joinOn);
+  if (endHint) {
+    endHint.textContent = joinOn
+      ? 'This is auto-calculated from the selected start time and duration.'
+      : 'Enter the exact exam end date and time manually.';
+  }
+  endInput.readOnly = joinOn;
+  endInput.disabled = false;
+  if (!joinOn) joinInput.value = 0;
+
+  const startVal = startInput.value;
+  const durMin = parseInt(durInput.value || '0', 10);
+  if (!startVal || !durMin) {
+    if (joinOn) endInput.value = '';
+    return;
+  }
+  const end = new Date(startVal);
+  end.setMinutes(end.getMinutes() + durMin);
+  if (joinOn) {
+    endInput.value = end.toISOString().slice(0,16);
+  }
 }
 
 function showExamWarn(msg) {
@@ -476,6 +548,13 @@ function attachEventListeners() {
     const form = document.getElementById('ef-form');
     if (form) {
       form.addEventListener('submit', (e) => {
+        const joinToggle = document.getElementById('ef-join-enabled');
+        const joinInput = document.getElementById('ef-join');
+        const endInput = document.getElementById('ef-en');
+        if (joinToggle && joinInput && !joinToggle.checked) joinInput.value = 0;
+        if (joinToggle && joinToggle.checked && endInput) {
+          updateExamTimingPreview();
+        }
         const code = document.getElementById('ef-code').value.trim();
         const id = document.getElementById('ef-id').value;
         if (!code) {
@@ -543,6 +622,14 @@ function attachEventListeners() {
       });
     }
   } catch(err) { console.error('Error attaching code input listener:', err); }
+
+  try {
+    ['ef-join-enabled','ef-st','ef-dur'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', updateExamTimingPreview);
+      if (el) el.addEventListener('change', updateExamTimingPreview);
+    });
+  } catch(err) { console.error('Error attaching timing listener:', err); }
 }
 </script>
 <script src="/assets/js/admin-exams.js"></script>

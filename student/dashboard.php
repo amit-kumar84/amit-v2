@@ -43,10 +43,20 @@ $labels = [
   'startExamText' => t('sd_start_exam'),
   'joinWindowClosedText' => t('sd_join_window_closed'),
   'joinWindowClosesInText' => t('sd_join_window_closes_in'),
-  'joinWindowOpensInText' => lang() === 'hi' ? 'जॉइन विंडो खुलेगी' : 'Join window available in',
+  'joinWindowOpensInText' => lang() === 'hi' ? 'जॉइन विंडो शुरू होने में' : 'Join window opens in',
   'currentlyOngoingText' => t('sd_currently_ongoing'),
-  'maxAttempts' => 'Max Attempts',
-  'noQuestions' => 'No Questions',
+  'maxAttempts' => t('sd_max_attempts'),
+  'noQuestions' => t('sd_no_questions'),
+  'candidatePortal' => t('sd_candidate_portal'),
+  'kotdwarUnit' => t('sd_kotdwar_unit'),
+  'modeJoinWindow' => t('sd_mode_join_window'),
+  'modeDirectStart' => t('sd_mode_direct_start'),
+  'visibilityJoin' => t('sd_visibility_join'),
+  'visibilityDirect' => t('sd_visibility_direct'),
+  'joinWindowEnabled' => t('sd_join_window_enabled'),
+  'joinWindowDisabled' => t('sd_join_window_disabled'),
+  'windowLabel' => t('sd_window_label'),
+  'emptyMessage' => t('sd_exam_controller_note'),
   'syncing' => lang() === 'hi' ? 'परीक्षा अपडेट हर 10 सेकंड में जाँची जा रही है' : 'Checking for exam updates every 10 seconds',
   'live' => lang() === 'hi' ? 'लाइव अपडेट' : 'Live update',
 ];
@@ -56,14 +66,22 @@ $labels = [
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(0, 169, 224, 0.12);
-    background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(240,249,255,0.92));
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,250,255,0.94));
     box-shadow: 0 12px 28px rgba(14, 42, 71, 0.08);
     transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    border-radius: 18px;
   }
   .exam-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 18px 36px rgba(14, 42, 71, 0.14);
     border-color: rgba(0, 169, 224, 0.28);
+  }
+  .exam-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 5px;
+    background: linear-gradient(90deg, #0E2A47 0%, #00A9E0 42%, #FF9933 100%);
   }
   .exam-card h5 {
     background: linear-gradient(90deg, #0E2A47, #00A9E0, #FF9933);
@@ -71,6 +89,83 @@ $labels = [
     background-clip: text;
     -webkit-text-fill-color: transparent;
     text-fill-color: transparent;
+  }
+  .exam-card .exam-title {
+    font-size: 1rem;
+    line-height: 1.25;
+  }
+  .exam-card .exam-code {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(14, 42, 71, 0.06);
+    color: #0E2A47;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+  .exam-card .exam-subline {
+    color: #47627e;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .exam-card .exam-panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(241,248,255,0.92));
+    border: 1px solid rgba(0, 169, 224, 0.10);
+    border-radius: 14px;
+    padding: 12px;
+  }
+  .exam-card .exam-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .exam-card .metric {
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align: center;
+    background: rgba(255,255,255,0.72);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+  }
+  .exam-card .metric-label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7d95;
+    margin-bottom: 2px;
+    font-weight: 800;
+  }
+  .exam-card .metric-value {
+    font-size: 15px;
+    font-weight: 900;
+    color: #0E2A47;
+  }
+  .exam-card .exam-detail-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .exam-card .exam-detail-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(0, 169, 224, 0.08);
+    color: #0E2A47;
+    border: 1px solid rgba(0, 169, 224, 0.12);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .exam-card .exam-note {
+    margin-top: 10px;
+    color: #5a6d83;
+    font-size: 12px;
+    line-height: 1.5;
   }
   .exam-card .small.text-secondary > div {
     color: #1f3b57;
@@ -155,8 +250,8 @@ $labels = [
         <img src="<?= url('assets/icons/BEL-Logo-Trnsprent.png') ?>" alt="BEL">
       </a>
       <div class="student-topbar-copy">
-        <div class="student-topbar-title">Candidate Portal · <?= t('brand') ?></div>
-        <div class="student-topbar-subtitle"><?= t('sd_welcome') ?>, <?= h($u['name']) ?> · Kotdwar Unit</div>
+        <div class="student-topbar-title"><?= t('sd_candidate_portal') ?> · <?= t('brand') ?></div>
+        <div class="student-topbar-subtitle"><?= t('sd_welcome') ?>, <?= h($u['name']) ?> · <?= t('sd_kotdwar_unit') ?></div>
       </div>
       <div class="student-topbar-actions">
         <a href="?lang=<?= lang()==='en'?'hi':'en' ?>" class="btn btn-sm btn-outline-light"><?= t('lang_toggle') ?></a>
@@ -176,26 +271,55 @@ $labels = [
 
   <div class="row g-3 mt-2" id="student-exams-grid">
     <?php foreach ($exams as $e): ?>
-      <?php $canStart = $e['status'] === 'join' && $e['attempts_left'] > 0 && $e['qcount'] > 0; ?>
+      <?php $canStart = exam_can_start_now($e) && $e['attempts_left'] > 0 && $e['qcount'] > 0; ?>
       <?php $joinWindowEndsAt = !empty($e['join_window_minutes']) ? strtotime($e['start_time']) : null; ?>
       <?php $joinWindowStartsAt = !empty($e['join_window_start']) ? strtotime($e['join_window_start']) : null; ?>
+      <?php $modeLabel = $e['join_window_minutes'] > 0 ? sprintf(t('sd_mode_join_window'), (int)$e['join_window_minutes']) : t('sd_mode_direct_start'); ?>
+      <?php $visibilityNote = $e['join_window_minutes'] > 0 ? t('sd_visibility_join') : t('sd_visibility_direct'); ?>
       <div class="col-md-6 col-lg-4">
-        <div class="exam-card h-100 d-flex flex-column" data-exam-card data-status="<?= h($e['status']) ?>" data-can-start="<?= $canStart ? '1' : '0' ?>" data-join-window-end-ts="<?= $joinWindowEndsAt ? ((int)$joinWindowEndsAt * 1000) : '' ?>" data-join-window-start-ts="<?= $joinWindowStartsAt ? ((int)$joinWindowStartsAt * 1000) : '' ?>">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <h5 class="fw-bold mb-0"><i class="fas fa-book-open text-secondary me-2"></i><?= h($e['exam_name']) ?></h5>
-            <span class="pill status-<?= $e['status'] ?>"><?= t('sd_' . $e['status']) ?></span>
-          </div>
-          <div class="small text-secondary">
-            <div><i class="far fa-clock"></i> <?= t('sd_duration') ?>: <b><?= (int)$e['duration_minutes'] ?> min</b></div>
-            <div><?= t('sd_questions') ?>: <b><?= (int)$e['qcount'] ?></b> · <?= t('sd_attempts_left') ?>: <b><?= $e['attempts_left'] ?></b></div>
-            <div class="text-muted mt-1 join-window-info" style="font-size:11px">
+        <div class="exam-card h-100 d-flex flex-column" data-exam-card data-status="<?= h($e['status']) ?>" data-can-start="<?= $canStart ? '1' : '0' ?>" data-join-window-minutes="<?= (int)$e['join_window_minutes'] ?>" data-join-window-end-ts="<?= $joinWindowEndsAt ? ((int)$joinWindowEndsAt * 1000) : '' ?>" data-join-window-start-ts="<?= $joinWindowStartsAt ? ((int)$joinWindowStartsAt * 1000) : '' ?>">
+          <div class="p-3 pb-2">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+              <div class="flex-grow-1">
+                <div class="exam-code mb-2"><i class="fas fa-barcode"></i><?= h($e['exam_code'] ?: 'EXAM') ?></div>
+                <h5 class="fw-bold mb-1 exam-title"><i class="fas fa-book-open text-secondary me-2"></i><?= h($e['exam_name']) ?></h5>
+                <div class="exam-subline"><?= h($visibilityNote) ?></div>
+              </div>
+              <span class="pill status-<?= $e['status'] ?>"><?= t('sd_' . $e['status']) ?></span>
+            </div>
+
+            <div class="exam-panel mt-3">
+              <div class="exam-metrics">
+                <div class="metric">
+                  <span class="metric-label"><?= h($labels['duration']) ?></span>
+                  <span class="metric-value"><?= (int)$e['duration_minutes'] ?>m</span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label"><?= h($labels['questions']) ?></span>
+                  <span class="metric-value"><?= (int)$e['qcount'] ?></span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label"><?= h($labels['attemptsLeft']) ?></span>
+                  <span class="metric-value"><?= $e['attempts_left'] ?></span>
+                </div>
+              </div>
+              <div class="exam-detail-row">
+                <span class="exam-detail-chip"><i class="fas fa-clipboard-list"></i><?= h($modeLabel) ?></span>
+                <span class="exam-detail-chip"><i class="far fa-calendar-alt"></i><?= fmt_dt($e['start_time']) ?></span>
+              </div>
+              <div class="text-muted mt-2 join-window-info" style="font-size:11px">
               <?php if ($e['status'] === 'join'): ?>
                 <span class="join-window-countdown" data-join-countdown><?= h(t('sd_join_window_closes_in')) ?> <span class="join-window-time">--:--</span></span>
               <?php elseif ($e['status'] === 'upcoming' && $e['join_window_start_label']): ?>
                 <span class="join-window-countdown" data-join-open-countdown><?= h($labels['joinWindowOpensInText']) ?> <span class="join-window-time">--:--</span></span>
               <?php else: ?>
-                Window: <?= fmt_dt($e['start_time']) ?> → <?= fmt_dt($e['end_time']) ?>
+                <?= h($labels['windowLabel']) ?>: <?= fmt_dt($e['start_time']) ?> → <?= fmt_dt($e['end_time']) ?>
               <?php endif; ?>
+              </div>
+              <div class="exam-note">
+                <i class="fas fa-circle-info me-1 text-info"></i>
+                <?= h($e['join_window_minutes'] > 0 ? $labels['joinWindowEnabled'] : $labels['joinWindowDisabled']) ?>
+              </div>
             </div>
           </div>
           <div class="mt-auto pt-3">
@@ -205,8 +329,8 @@ $labels = [
               <button disabled class="btn btn-secondary w-100 join-window-action" data-join-action>
                 <?php if ($e['status']==='closed') echo t('sd_closed');
                 elseif ($e['status']==='upcoming') echo t('sd_upcoming');
-                elseif ($e['attempts_left']<=0) echo 'Max Attempts';
-                else echo 'No Questions'; ?>
+                elseif ($e['attempts_left']<=0) echo $labels['maxAttempts'];
+                else echo $labels['noQuestions']; ?>
               </button>
             <?php endif; ?>
           </div>
@@ -217,7 +341,7 @@ $labels = [
       <div class="col-12 exam-empty"><div class="exam-card text-center text-secondary py-5">
         <i class="fas fa-lock fa-2x mb-3 text-muted"></i>
         <h5 class="fw-bold"><?= t('sd_no_exams') ?></h5>
-        <p class="small mb-0">No examinations have been assigned to your account yet. Please contact the BEL Kotdwar Examination Controller.</p>
+        <p class="small mb-0"><?= h($labels['emptyMessage']) ?></p>
       </div></div>
     <?php endif; ?>
   </div>
@@ -245,9 +369,9 @@ $labels = [
   }
 
   function buttonText(exam) {
+    if (exam.can_start) return `${escapeHtml(labels.startExamText)} →`;
     if (exam.status === 'join') return `${escapeHtml(labels.joinNowText)} →`;
     if (exam.status === 'active') return labels.joinWindowClosedText;
-    if (exam.can_start) return `${escapeHtml(labels.startExamText)} →`;
     if (exam.status === 'closed') return labels.closedText;
     if (exam.status === 'upcoming') return labels.upcomingText;
     if (exam.attempts_left <= 0) return labels.maxAttempts;
@@ -255,29 +379,62 @@ $labels = [
   }
 
   function examCard(exam) {
-    const isJoinClickable = exam.status === 'join' && !!exam.can_start;
-    const disabled = isJoinClickable ? '' : ' disabled';
-    const btnClass = isJoinClickable ? 'btn btn-navy w-100' : 'btn btn-secondary w-100';
+    const isStartable = !!exam.can_start;
+    const disabled = isStartable ? '' : ' disabled';
+    const btnClass = isStartable ? 'btn btn-navy w-100' : 'btn btn-secondary w-100';
     const href = <?= json_encode(url('student/instructions.php?exam_id=')) ?> + encodeURIComponent(exam.id);
+    const modeLabel = parseInt(exam.join_window_minutes || 0, 10) > 0
+      ? labels.modeJoinWindow.replace('%d', escapeHtml(exam.join_window_minutes))
+      : labels.modeDirectStart;
+    const visibilityNote = parseInt(exam.join_window_minutes || 0, 10) > 0
+      ? labels.visibilityJoin
+      : labels.visibilityDirect;
     const windowInfo = exam.status === 'join'
       ? `<span class="join-window-countdown" data-join-countdown>${escapeHtml(labels.joinWindowClosesInText)} <span class="join-window-time">--:--</span></span>`
       : (exam.status === 'upcoming' && exam.join_window_start_label)
         ? `<span class="join-window-countdown" data-join-open-countdown>${escapeHtml(labels.joinWindowOpensInText)} <span class="join-window-time">--:--</span></span>`
-        : `Window: ${escapeHtml(exam.start_time_label)} → ${escapeHtml(exam.end_time_label)}`;
+        : `${escapeHtml(labels.windowLabel)}: ${escapeHtml(exam.start_time_label)} → ${escapeHtml(exam.end_time_label)}`;
     return `
       <div class="col-md-6 col-lg-4" data-exam-id="${escapeHtml(exam.id)}">
-        <div class="exam-card h-100 d-flex flex-column" data-exam-card data-status="${escapeHtml(exam.status)}" data-can-start="${isJoinClickable ? '1' : '0'}" data-join-window-end-ts="${escapeHtml(exam.start_ts || '')}" data-join-window-start-ts="${escapeHtml(exam.join_window_start_ts || '')}">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <h5 class="fw-bold mb-0"><i class="fas fa-book-open text-secondary me-2"></i>${escapeHtml(exam.exam_name)}</h5>
-            <span class="pill status-${escapeHtml(exam.status)}">${escapeHtml(statusLabel(exam.status))}</span>
-          </div>
-          <div class="small text-secondary">
-            <div><i class="far fa-clock"></i> ${escapeHtml(labels.duration)}: <b>${escapeHtml(exam.duration_minutes)} min</b></div>
-            <div>${escapeHtml(labels.questions)}: <b>${escapeHtml(exam.qcount)}</b> · ${escapeHtml(labels.attemptsLeft)}: <b>${escapeHtml(exam.attempts_left)}</b></div>
-            <div class="text-muted mt-1 join-window-info" style="font-size:11px">${windowInfo}</div>
+        <div class="exam-card h-100 d-flex flex-column" data-exam-card data-status="${escapeHtml(exam.status)}" data-can-start="${isStartable ? '1' : '0'}" data-join-window-minutes="${escapeHtml(exam.join_window_minutes || 0)}" data-join-window-end-ts="${escapeHtml(exam.start_ts || '')}" data-join-window-start-ts="${escapeHtml(exam.join_window_start_ts || '')}">
+          <div class="p-3 pb-2">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+              <div class="flex-grow-1">
+                <div class="exam-code mb-2"><i class="fas fa-barcode"></i>${escapeHtml(exam.exam_code || 'EXAM')}</div>
+                <h5 class="fw-bold mb-1 exam-title"><i class="fas fa-book-open text-secondary me-2"></i>${escapeHtml(exam.exam_name)}</h5>
+                <div class="exam-subline">${escapeHtml(visibilityNote)}</div>
+              </div>
+              <span class="pill status-${escapeHtml(exam.status)}">${escapeHtml(statusLabel(exam.status))}</span>
+            </div>
+
+            <div class="exam-panel mt-3">
+              <div class="exam-metrics">
+                <div class="metric">
+                  <span class="metric-label">${escapeHtml(labels.duration)}</span>
+                  <span class="metric-value">${escapeHtml(exam.duration_minutes)}m</span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">${escapeHtml(labels.questions)}</span>
+                  <span class="metric-value">${escapeHtml(exam.qcount)}</span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">${escapeHtml(labels.attemptsLeft)}</span>
+                  <span class="metric-value">${escapeHtml(exam.attempts_left)}</span>
+                </div>
+              </div>
+              <div class="exam-detail-row">
+                <span class="exam-detail-chip"><i class="fas fa-clipboard-list"></i>${escapeHtml(modeLabel)}</span>
+                <span class="exam-detail-chip"><i class="far fa-calendar-alt"></i>${escapeHtml(exam.start_time_label)}</span>
+              </div>
+              <div class="text-muted mt-2 join-window-info" style="font-size:11px">${windowInfo}</div>
+              <div class="exam-note">
+                <i class="fas fa-circle-info me-1 text-info"></i>
+                ${parseInt(exam.join_window_minutes || 0, 10) > 0 ? escapeHtml(labels.joinWindowEnabled) : escapeHtml(labels.joinWindowDisabled)}
+              </div>
+            </div>
           </div>
           <div class="mt-auto pt-3">
-            ${isJoinClickable ? `<a href="${href}" class="${btnClass} join-window-action" data-join-action data-join-href="${href}">${escapeHtml(buttonText(exam))}</a>` : `<button class="${btnClass} join-window-action" data-join-action${disabled}>${escapeHtml(buttonText(exam))}</button>`}
+            ${isStartable ? `<a href="${href}" class="${btnClass} join-window-action" data-join-action data-join-href="${href}">${escapeHtml(buttonText(exam))}</a>` : `<button class="${btnClass} join-window-action" data-join-action${disabled}>${escapeHtml(buttonText(exam))}</button>`}
           </div>
         </div>
       </div>`;
@@ -302,6 +459,7 @@ $labels = [
       const canStart = card.dataset.canStart === '1';
       const status = card.dataset.status || '';
       const joinStartTs = parseInt(card.dataset.joinWindowStartTs || '', 10);
+      const joinWindowMinutes = parseInt(card.dataset.joinWindowMinutes || '0', 10);
 
       function setJoinActionDisabled(disabled) {
         if (!actionEl) return;
@@ -355,16 +513,24 @@ $labels = [
           }
         }
       } else if (status === 'active') {
-        // When exam is already active, disallow joining from dashboard — show join window closed
-        if (countdownEl) countdownEl.textContent = labels.joinWindowClosedText;
-        setJoinActionDisabled(true);
-        if (actionEl) {
-          actionEl.classList.remove('btn-navy');
-          actionEl.classList.add('btn-secondary');
-          actionEl.textContent = labels.joinWindowClosedText;
-        }
-        if (statusPill) {
-          statusPill.textContent = labels.statuses['active'] || 'Active';
+        if (joinWindowMinutes > 0) {
+          if (countdownEl) countdownEl.textContent = labels.joinWindowClosedText;
+          setJoinActionDisabled(true);
+          if (actionEl) {
+            actionEl.classList.remove('btn-navy');
+            actionEl.classList.add('btn-secondary');
+            actionEl.textContent = labels.joinWindowClosedText;
+          }
+          if (statusPill) {
+            statusPill.textContent = labels.statuses['active'] || 'Active';
+          }
+        } else {
+          setJoinActionDisabled(false);
+          if (actionEl) {
+            actionEl.classList.remove('btn-secondary');
+            actionEl.classList.add('btn-navy');
+            actionEl.textContent = `${escapeHtml(labels.startExamText)} →`;
+          }
         }
       } else if (status === 'upcoming' && !canStart) {
         const remaining = joinStartTs - now;
@@ -385,7 +551,7 @@ $labels = [
           <div class="exam-card text-center text-secondary py-5">
             <i class="fas fa-lock fa-2x mb-3 text-muted"></i>
             <h5 class="fw-bold">${escapeHtml(labels.noExams)}</h5>
-            <p class="small mb-0">No examinations have been assigned to your account yet. Please contact the BEL Kotdwar Examination Controller.</p>
+            <p class="small mb-0">${escapeHtml(labels.emptyMessage)}</p>
           </div>
         </div>`;
       return;

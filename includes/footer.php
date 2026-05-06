@@ -53,34 +53,339 @@
   </script>
 <!-- Global in-app confirmation modal and helper -->
 <div class="modal fade app-confirm-fade" id="appConfirmModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg app-confirm-card">
-      <div class="modal-body p-4 text-center">
-        <div class="app-confirm-icon mb-3" id="appConfirmIcon"> 
-          <svg width="54" height="54" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" stroke="#e9edf5" stroke-width="2" fill="#f8fafc"/><path d="M9 12l2 2 4-4" stroke="#0b74de" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="modal-dialog modal-dialog-centered app-confirm-dialog">
+    <div class="modal-content border-0 shadow app-confirm-card">
+      <div class="app-confirm-header"></div>
+      <div class="modal-body p-5 text-center">
+        <div class="app-confirm-icon-wrapper mb-4" id="appConfirmIconWrapper">
+          <div class="app-confirm-icon" id="appConfirmIcon"></div>
         </div>
-        <h5 class="modal-title mb-2" id="appConfirmTitle">Please confirm</h5>
-        <p id="appConfirmMessage" class="mb-3 text-muted small"></p>
-        <div class="d-flex justify-content-center gap-2">
-          <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal" id="appConfirmCancel">Cancel</button>
-          <button type="button" class="btn btn-primary btn-sm px-3" id="appConfirmOk">OK</button>
+        <h5 class="modal-title mb-3 app-confirm-title" id="appConfirmTitle">Please confirm</h5>
+        <p id="appConfirmMessage" class="mb-4 app-confirm-message"></p>
+        <div class="d-flex justify-content-center gap-3 app-confirm-buttons">
+          <button type="button" class="btn btn-outline-secondary app-confirm-cancel px-5" data-bs-dismiss="modal" id="appConfirmCancel">Cancel</button>
+          <button type="button" class="btn btn-primary app-confirm-ok px-5" id="appConfirmOk">OK</button>
         </div>
       </div>
     </div>
   </div>
 </div>
 <style>
-/* Enhanced confirmation modal styles */
-.app-confirm-fade .modal-dialog { transform: translateY(-10px); transition: transform .28s ease; }
-.app-confirm-fade.show .modal-dialog { transform: translateY(0); }
-.app-confirm-card { border-radius: 12px; overflow: hidden; }
-.app-confirm-icon { width: 64px; height: 64px; display:flex; align-items:center; justify-content:center; margin:0 auto; background: linear-gradient(135deg, rgba(11,116,222,0.06), rgba(11,116,222,0.02)); border-radius: 50%; transition: transform .28s cubic-bezier(.2,.9,.2,1); }
-.app-confirm-fade.show .app-confirm-icon { transform: scale(1.06); }
-.app-confirm-card .modal-title { font-weight:700; color:#0f172a; }
-.app-confirm-card .modal-body { background: linear-gradient(180deg, #ffffff, #fbfdff); }
-.app-confirm-card .btn-primary { box-shadow: 0 6px 18px rgba(11,116,222,0.14); }
-.app-confirm-card { animation: appConfirmIn .28s cubic-bezier(.2,.9,.2,1); }
-@keyframes appConfirmIn { from { opacity: 0; transform: translateY(-8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+/* ===== ENHANCED CONFIRMATION MODAL - STYLISH & ANIMATED ===== */
+
+.app-confirm-fade {
+  --bs-backdrop-bg: rgba(15, 23, 42, 0.85);
+}
+
+.app-confirm-dialog {
+  max-width: 420px;
+  transform: scale(0.92) translateY(-20px);
+  opacity: 0;
+  transition: all 0.35s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.app-confirm-fade.show .app-confirm-dialog {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.app-confirm-card {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25), 0 0 1px rgba(15, 23, 42, 0.1);
+  background: #ffffff;
+  position: relative;
+}
+
+/* Gradient header bar */
+.app-confirm-header {
+  height: 4px;
+  background: linear-gradient(90deg, #FF9933, #3B6BA8, #FF9933);
+  background-size: 200% 100%;
+  animation: headerFlow 3s ease infinite;
+}
+
+@keyframes headerFlow {
+  0% { background-position: 0% 0; }
+  50% { background-position: 100% 0; }
+  100% { background-position: 0% 0; }
+}
+
+.app-confirm-card .modal-body {
+  background: linear-gradient(135deg, #ffffff 0%, #fbfdff 50%, #f7f9ff 100%);
+  padding: 2.5rem !important;
+}
+
+/* Icon wrapper with animated pulse */
+.app-confirm-icon-wrapper {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: iconBounce 0.6s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+@keyframes iconBounce {
+  0% {
+    transform: scale(0) rotate(-20deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+/* Icon background with pulse animation */
+.app-confirm-icon {
+  width: 88px;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(11, 116, 222, 0.12), rgba(11, 116, 222, 0.05));
+  position: relative;
+  overflow: hidden;
+}
+
+.app-confirm-icon::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(11, 116, 222, 0.2) 90deg, transparent 360deg);
+  animation: iconRotate 4s linear infinite;
+  opacity: 0;
+}
+
+.app-confirm-fade.show .app-confirm-icon::before {
+  opacity: 1;
+}
+
+@keyframes iconRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.app-confirm-icon svg {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Icon animations based on type */
+.app-confirm-icon.danger::after,
+.app-confirm-icon.warn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent 60%, rgba(225, 29, 72, 0.15) 100%);
+  animation: dangerPulse 2s ease-in-out infinite;
+}
+
+@keyframes dangerPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* Title styling */
+.app-confirm-title {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 1.3rem;
+  letter-spacing: -0.3px;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+/* Message styling */
+.app-confirm-message {
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 0 !important;
+}
+
+/* Button group styling */
+.app-confirm-buttons {
+  gap: 1rem !important;
+}
+
+/* Cancel button */
+.app-confirm-cancel {
+  border: 1.5px solid #cbd5e1;
+  color: #64748b;
+  background: transparent;
+  font-weight: 600;
+  padding: 0.6rem 1.5rem !important;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.app-confirm-cancel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  z-index: -1;
+}
+
+.app-confirm-cancel:hover {
+  border-color: #94a3b8;
+  color: #334155;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(100, 116, 139, 0.15);
+}
+
+.app-confirm-cancel:hover::before {
+  opacity: 1;
+}
+
+.app-confirm-cancel:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(100, 116, 139, 0.1);
+}
+
+/* OK/Confirm button */
+.app-confirm-ok {
+  background: linear-gradient(135deg, #0b74de 0%, #0860d0 100%);
+  border: 0;
+  color: white;
+  font-weight: 600;
+  padding: 0.6rem 1.5rem !important;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(11, 116, 222, 0.3);
+  transition: all 0.25s ease;
+}
+
+.app-confirm-ok::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.app-confirm-ok:hover {
+  background: linear-gradient(135deg, #0860d0 0%, #074bb8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(11, 116, 222, 0.4);
+}
+
+.app-confirm-ok:hover::before {
+  opacity: 1;
+}
+
+.app-confirm-ok:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(11, 116, 222, 0.25);
+}
+
+/* Danger button styling */
+.app-confirm-ok.btn-danger {
+  background: linear-gradient(135deg, #e11d48 0%, #dc1d45 100%);
+  box-shadow: 0 8px 20px rgba(225, 29, 72, 0.3);
+}
+
+.app-confirm-ok.btn-danger:hover {
+  background: linear-gradient(135deg, #dc1d45 0%, #c71531 100%);
+  box-shadow: 0 12px 28px rgba(225, 29, 72, 0.4);
+}
+
+/* Success button styling */
+.app-confirm-ok.btn-success {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
+}
+
+.app-confirm-ok.btn-success:hover {
+  background: linear-gradient(135deg, #047857 0%, #046043 100%);
+  box-shadow: 0 12px 28px rgba(5, 150, 105, 0.4);
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .app-confirm-dialog {
+    margin: 1rem;
+    max-width: calc(100% - 2rem);
+  }
+  
+  .app-confirm-card .modal-body {
+    padding: 1.75rem !important;
+  }
+  
+  .app-confirm-title {
+    font-size: 1.15rem;
+  }
+  
+  .app-confirm-buttons {
+    flex-direction: column-reverse;
+    gap: 0.75rem !important;
+  }
+  
+  .app-confirm-cancel,
+  .app-confirm-ok {
+    width: 100%;
+  }
+}
+
+/* Icon specific color backgrounds */
+.app-confirm-icon.info {
+  background: linear-gradient(135deg, rgba(11, 116, 222, 0.12), rgba(11, 116, 222, 0.05));
+}
+
+.app-confirm-icon.danger,
+.app-confirm-icon.warn {
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.12), rgba(225, 29, 72, 0.05));
+}
+
+.app-confirm-icon.success {
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.12), rgba(5, 150, 105, 0.05));
+}
+
+/* Shake animation for critical actions */
+.app-confirm-icon.danger::after {
+  animation: dangerShake 0.5s cubic-bezier(0.36, 0, 0.66, 1);
+}
+
+@keyframes dangerShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* Success checkmark animation */
+.app-confirm-icon.success svg {
+  animation: successCheckmark 0.6s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes successCheckmark {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(-45deg);
+  }
+  50% {
+    transform: scale(1.2) rotate(10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
 </style>
 <script>
   function ensureAppConfirmDom() {
@@ -90,32 +395,37 @@
     let msgEl = document.getElementById('appConfirmMessage');
     let titleEl = document.getElementById('appConfirmTitle');
     let iconEl = document.getElementById('appConfirmIcon');
+    let iconWrapperEl = document.getElementById('appConfirmIconWrapper');
     let okBtn = document.getElementById('appConfirmOk');
     let cancelBtn = document.getElementById('appConfirmCancel');
 
-    if (!msgEl || !titleEl || !iconEl || !okBtn || !cancelBtn) {
+    if (!msgEl || !titleEl || !iconEl || !okBtn || !cancelBtn || !iconWrapperEl) {
       const content = modalEl.querySelector('.modal-content');
       if (!content) return null;
       content.innerHTML = '' +
-        '<div class="modal-body p-4 text-center">' +
-          '<div class="app-confirm-icon mb-3" id="appConfirmIcon"></div>' +
-          '<h5 class="modal-title mb-2" id="appConfirmTitle">Please confirm</h5>' +
-          '<p id="appConfirmMessage" class="mb-3 text-muted small"></p>' +
-          '<div class="d-flex justify-content-center gap-2">' +
-            '<button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal" id="appConfirmCancel">Cancel</button>' +
-            '<button type="button" class="btn btn-primary btn-sm px-3" id="appConfirmOk">OK</button>' +
+        '<div class="app-confirm-header"></div>' +
+        '<div class="modal-body p-5 text-center">' +
+          '<div class="app-confirm-icon-wrapper mb-4" id="appConfirmIconWrapper">' +
+            '<div class="app-confirm-icon" id="appConfirmIcon"></div>' +
+          '</div>' +
+          '<h5 class="modal-title mb-3 app-confirm-title" id="appConfirmTitle">Please confirm</h5>' +
+          '<p id="appConfirmMessage" class="mb-4 app-confirm-message"></p>' +
+          '<div class="d-flex justify-content-center gap-3 app-confirm-buttons">' +
+            '<button type="button" class="btn btn-outline-secondary app-confirm-cancel px-5" data-bs-dismiss="modal" id="appConfirmCancel">Cancel</button>' +
+            '<button type="button" class="btn btn-primary app-confirm-ok px-5" id="appConfirmOk">OK</button>' +
           '</div>' +
         '</div>';
 
       msgEl = document.getElementById('appConfirmMessage');
       titleEl = document.getElementById('appConfirmTitle');
       iconEl = document.getElementById('appConfirmIcon');
+      iconWrapperEl = document.getElementById('appConfirmIconWrapper');
       okBtn = document.getElementById('appConfirmOk');
       cancelBtn = document.getElementById('appConfirmCancel');
     }
 
-    if (!msgEl || !titleEl || !iconEl || !okBtn || !cancelBtn) return null;
-    return { modalEl, msgEl, titleEl, iconEl, okBtn, cancelBtn };
+    if (!msgEl || !titleEl || !iconEl || !okBtn || !cancelBtn || !iconWrapperEl) return null;
+    return { modalEl, msgEl, titleEl, iconEl, iconWrapperEl, okBtn, cancelBtn };
   }
 
   // appConfirm: returns Promise<boolean>
@@ -127,32 +437,43 @@
       const cancelText = opts.cancelText || 'Cancel';
       const refs = ensureAppConfirmDom();
       if (!refs) { resolve(false); return; }
-      const { modalEl, msgEl, titleEl, iconEl, okBtn, cancelBtn } = refs;
+      const { modalEl, msgEl, titleEl, iconEl, iconWrapperEl, okBtn, cancelBtn } = refs;
       titleEl.textContent = title;
       msgEl.textContent = message || '';
       okBtn.textContent = okText; cancelBtn.textContent = cancelText;
 
-      // set icon color/state
+      // Remove previous icon classes and set new ones
+      iconEl.className = 'app-confirm-icon';
+      
+      // set icon color/state with better animations
       iconEl.innerHTML = '';
       if (icon === 'danger' || icon === 'warn') {
-        iconEl.innerHTML = '<svg width="54" height="54" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" stroke="#ffe9e9" stroke-width="2" fill="#fff8f8"/><path d="M12 8v4" stroke="#e11d48" stroke-width="1.8" stroke-linecap="round"/><path d="M12 16h.01" stroke="#e11d48" stroke-width="1.8" stroke-linecap="round"/></svg>';
-        okBtn.classList.remove('btn-primary'); okBtn.classList.add('btn-danger');
+        iconEl.classList.add('danger');
+        iconEl.innerHTML = '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" stroke="#e11d48" stroke-width="2" fill="#ffe9e9" opacity="0.8"/><path d="M12 8v4" stroke="#e11d48" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17" r="0.8" fill="#e11d48"/></svg>';
+        okBtn.classList.remove('btn-primary', 'btn-success'); 
+        okBtn.classList.add('btn-danger');
       } else if (icon === 'success') {
-        iconEl.innerHTML = '<svg width="54" height="54" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" stroke="#e9f9ee" stroke-width="2" fill="#f7fffb"/><path d="M9 12l2 2 4-4" stroke="#059669" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        okBtn.classList.remove('btn-primary'); okBtn.classList.add('btn-success');
+        iconEl.classList.add('success');
+        iconEl.innerHTML = '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" stroke="#059669" stroke-width="2" fill="#e9f9ee" opacity="0.8"/><path d="M8 12l3 3 5-5" stroke="#059669" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        okBtn.classList.remove('btn-primary', 'btn-danger'); 
+        okBtn.classList.add('btn-success');
       } else {
-        iconEl.innerHTML = '<svg width="54" height="54" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" stroke="#e9edf5" stroke-width="2" fill="#f8fafc"/><path d="M9 12l2 2 4-4" stroke="#0b74de" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        okBtn.classList.remove('btn-danger','btn-success'); okBtn.classList.add('btn-primary');
+        iconEl.classList.add('info');
+        iconEl.innerHTML = '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" stroke="#0b74de" stroke-width="2" fill="#e9edf5" opacity="0.8"/><path d="M12 8v4" stroke="#0b74de" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17" r="0.8" fill="#0b74de"/></svg>';
+        okBtn.classList.remove('btn-danger', 'btn-success'); 
+        okBtn.classList.add('btn-primary');
       }
 
-      const modal = new bootstrap.Modal(modalEl, { backdrop: 'static' });
+      const modal = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
 
       function cleanup(result) {
         okBtn.removeEventListener('click', onOk);
         cancelBtn.removeEventListener('click', onCancel);
         modal.hide();
         // reset ok button styles
-        okBtn.classList.remove('btn-danger','btn-success'); okBtn.classList.add('btn-primary');
+        okBtn.classList.remove('btn-danger', 'btn-success'); 
+        okBtn.classList.add('btn-primary');
+        iconEl.className = 'app-confirm-icon';
         resolve(result);
       }
       function onOk(e) { e && e.preventDefault(); cleanup(true); }
@@ -170,7 +491,7 @@
       const okText = opts.okText || 'OK';
       const refs = ensureAppConfirmDom();
       if (!refs) { resolve(); return; }
-      const { modalEl, msgEl, titleEl, iconEl, okBtn, cancelBtn } = refs;
+      const { modalEl, msgEl, titleEl, iconEl, iconWrapperEl, okBtn, cancelBtn } = refs;
 
       titleEl.textContent = title;
       msgEl.textContent = message || '';
@@ -178,17 +499,20 @@
       // hide cancel for alert
       cancelBtn.style.display = 'none';
 
-      // default info icon
-      iconEl.innerHTML = '<svg width="54" height="54" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" stroke="#e9edf5" stroke-width="2" fill="#f8fafc"/><path d="M11 10h2v6h-2zM11 7h2v2h-2z" stroke="#0b74de" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-      okBtn.classList.remove('btn-danger','btn-success'); okBtn.classList.add('btn-primary');
+      // Set info icon
+      iconEl.className = 'app-confirm-icon info';
+      iconEl.innerHTML = '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" stroke="#0b74de" stroke-width="2" fill="#e9edf5" opacity="0.8"/><path d="M12 8v4" stroke="#0b74de" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17" r="0.8" fill="#0b74de"/></svg>';
+      okBtn.classList.remove('btn-danger', 'btn-success'); 
+      okBtn.classList.add('btn-primary');
 
-      const modal = new bootstrap.Modal(modalEl, { backdrop: 'static' });
+      const modal = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
 
       function cleanup() {
         okBtn.removeEventListener('click', onOk);
         // restore cancel visibility
         cancelBtn.style.display = '';
         modal.hide();
+        iconEl.className = 'app-confirm-icon';
         resolve();
       }
       function onOk(e) { e && e.preventDefault(); cleanup(); }

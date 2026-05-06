@@ -544,27 +544,63 @@ $st = exam_status($ex);
 .notif-panel { position:fixed; top:70px; right:20px; width:420px; max-height:70vh; overflow-y:auto; background:#fff; border:1px solid #e2e8f0; border-radius:4px; box-shadow:0 10px 30px rgba(15,23,42,.2); z-index:3000; display:none; }
 .notif-panel.open { display:block; }
 .notif-panel header { padding:12px 16px; border-bottom:1px solid #e2e8f0; background:#f8fafc; display:flex; justify-content:space-between; align-items:center; }
-.notif-panel .item { padding:10px 14px; border-bottom:1px solid #f1f5f9; display:flex; gap:10px; }
+.notif-panel .item { padding:12px 14px; border-bottom:1px solid #f1f5f9; display:flex; gap:12px; align-items:flex-start; background:linear-gradient(180deg, #fff 0%, #fbfdff 100%); transition:background .25s ease, transform .25s ease; }
+.notif-panel .item:hover { background:linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%); transform:translateX(-2px); }
 .notif-panel .item:last-child { border-bottom:0; }
-.notif-panel .item img { width:40px; height:48px; object-fit:cover; border:1px solid #cbd5e1; border-radius:3px; flex-shrink:0; }
-.notif-panel .item .no-pic { width:40px; height:48px; background:#e2e8f0; border-radius:3px; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#94a3b8; }
+.notif-panel .item img { width:44px; height:54px; object-fit:cover; border:2px solid #cbd5e1; border-radius:10px; flex-shrink:0; box-shadow:0 6px 16px rgba(15,23,42,.08); }
+.notif-panel .item .no-pic { width:44px; height:54px; background:linear-gradient(135deg, #e2e8f0, #f8fafc); border:1px dashed #94a3b8; border-radius:10px; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#64748b; }
+.notif-panel .item .meta { display:flex; flex-direction:column; gap:4px; flex:1; }
+.notif-panel .item .event-chip { display:inline-flex; align-items:center; gap:6px; align-self:flex-start; font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; border-radius:999px; padding:4px 8px; background:#e0f2fe; color:#075985; }
+.notif-panel .item .event-chip.warn { background:#fef3c7; color:#92400e; }
+.notif-panel .item .event-chip.danger { background:#fee2e2; color:#991b1b; }
+.notif-panel .item .event-chip.info { background:#dbeafe; color:#1d4ed8; }
+.notif-panel .item .student-line { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+.notif-panel .item .student-name { font-weight:800; color:#0f172a; line-height:1.2; }
+.notif-panel .item .student-roll { font-size:11px; color:#64748b; font-weight:700; }
+.notif-panel .item .detail { font-size:12px; color:#334155; line-height:1.45; }
+.notif-panel .item .time { font-size:10px; color:#94a3b8; letter-spacing:.02em; }
 .notif-empty { text-align:center; padding:30px; color:#64748b; }
 
 /* Center alert overlay */
-.viol-alert-wrap { position:fixed; inset:0; background:rgba(15,23,42,.5); display:none; align-items:center; justify-content:center; z-index:4000; backdrop-filter:blur(3px); }
-.viol-alert-wrap.open { display:flex; animation:fadein .2s; }
+.viol-alert-wrap { position:fixed; inset:0; background:rgba(15,23,42,.58); display:none; align-items:center; justify-content:center; z-index:4000; backdrop-filter:blur(10px); }
+.viol-alert-wrap.open { display:flex; animation:fadein .22s ease-out; }
 @keyframes fadein { from{opacity:0} to{opacity:1} }
-.viol-alert { background:#fff; border:3px solid #dc2626; border-radius:6px; width:min(520px,92%); overflow:hidden; box-shadow:0 20px 60px rgba(220,38,38,.45); }
-.viol-alert header { background:#dc2626; color:#fff; padding:14px 18px; display:flex; align-items:center; gap:10px; }
-.viol-alert header h5 { margin:0; font-weight:800; letter-spacing:.02em; }
-.viol-alert .body { display:flex; gap:16px; padding:18px; }
-.viol-alert .body img { width:90px; height:110px; object-fit:cover; border:2px solid #0f172a; border-radius:3px; }
-.viol-alert .body .no-pic { width:90px; height:110px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; border-radius:3px; color:#94a3b8; font-size:11px; }
-.viol-alert .name { font-size:20px; font-weight:800; color:#0f172a; }
-.viol-alert .roll { font-family:monospace; color:#475569; font-weight:700; }
-.viol-alert .dob { color:#64748b; font-size:12px; }
-.viol-alert .what { background:#fee2e2; border-left:4px solid #dc2626; padding:10px 14px; margin-top:10px; color:#991b1b; font-weight:600; font-size:14px; }
-.viol-alert footer { padding:10px 18px; display:flex; gap:8px; justify-content:flex-end; background:#f8fafc; border-top:1px solid #e2e8f0; }
+@keyframes alertPop { 0%{transform:translateY(24px) scale(.96); opacity:0} 100%{transform:translateY(0) scale(1); opacity:1} }
+@keyframes alertGlow { 0%,100%{box-shadow:0 20px 60px rgba(220,38,38,.32)} 50%{box-shadow:0 24px 70px rgba(14,165,233,.24)} }
+.viol-alert { position:relative; width:min(720px,94%); overflow:hidden; border-radius:24px; background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.98)); border:1px solid rgba(148,163,184,.25); box-shadow:0 24px 70px rgba(15,23,42,.34); animation:alertPop .32s cubic-bezier(.22,1,.36,1), alertGlow 3s ease-in-out infinite; }
+.viol-alert::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at top right, rgba(14,165,233,.18) 0, transparent 35%), radial-gradient(circle at bottom left, rgba(244,63,94,.16) 0, transparent 32%); pointer-events:none; }
+.viol-alert::after { content:''; position:absolute; inset:0; border-radius:24px; padding:1px; background:linear-gradient(135deg, rgba(245,158,11,.75), rgba(14,165,233,.75), rgba(244,63,94,.75)); -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
+.viol-alert header { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; gap:12px; padding:18px 22px; background:linear-gradient(135deg, #111827 0%, #0f172a 45%, #1d4ed8 100%); color:#fff; }
+.viol-alert header .title-wrap { display:flex; align-items:center; gap:14px; min-width:0; }
+.viol-alert header .icon-badge { width:44px; height:44px; border-radius:14px; display:inline-flex; align-items:center; justify-content:center; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22); box-shadow:inset 0 1px 0 rgba(255,255,255,.14); flex-shrink:0; }
+.viol-alert header .title-copy { min-width:0; }
+.viol-alert header h5 { margin:0; font-weight:900; letter-spacing:.08em; text-transform:uppercase; font-size:15px; }
+.viol-alert header .sub { display:block; margin-top:3px; font-size:12px; color:rgba(255,255,255,.78); letter-spacing:.02em; }
+.viol-alert .violation-chip { display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:8px 12px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18); color:#fff; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; }
+.viol-alert .body { position:relative; z-index:1; display:grid; grid-template-columns:130px 1fr; gap:18px; padding:22px; }
+.viol-alert .photo-frame { position:relative; }
+.viol-alert .photo-frame::before { content:''; position:absolute; inset:-8px; border-radius:22px; background:linear-gradient(180deg, rgba(14,165,233,.18), rgba(244,63,94,.12)); filter:blur(6px); z-index:0; }
+.viol-alert .body img { position:relative; z-index:1; width:100%; height:160px; object-fit:cover; border-radius:18px; border:3px solid rgba(15,23,42,.12); box-shadow:0 14px 30px rgba(15,23,42,.16); background:#fff; }
+.viol-alert .body .no-pic { position:relative; z-index:1; width:100%; height:160px; background:linear-gradient(135deg, #e2e8f0, #f8fafc); display:flex; align-items:center; justify-content:center; border-radius:18px; color:#64748b; font-size:12px; font-weight:700; border:2px dashed #cbd5e1; }
+.viol-alert .name { font-size:24px; font-weight:900; color:#0f172a; line-height:1.08; }
+.viol-alert .roll { margin-top:5px; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color:#0369a1; font-weight:800; letter-spacing:.03em; }
+.viol-alert .dob { margin-top:4px; color:#64748b; font-size:12px; }
+.viol-alert .what { margin-top:14px; padding:12px 14px; border-radius:14px; background:linear-gradient(135deg, #fff7ed, #ecfeff); border:1px solid rgba(14,165,233,.16); color:#0f172a; font-weight:800; font-size:15px; display:flex; gap:10px; align-items:flex-start; }
+.viol-alert .what::before { content:'!'; width:24px; height:24px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg, #fb7185, #f59e0b); color:#fff; flex-shrink:0; font-weight:900; box-shadow:0 8px 16px rgba(244,63,94,.24); }
+.viol-alert .detail-card { margin-top:12px; display:grid; gap:10px; grid-template-columns:repeat(2, minmax(0,1fr)); }
+.viol-alert .kv { background:#fff; border:1px solid rgba(148,163,184,.18); border-radius:14px; padding:10px 12px; box-shadow:0 10px 24px rgba(15,23,42,.05); }
+.viol-alert .kv .k { display:block; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:#64748b; font-weight:800; margin-bottom:4px; }
+.viol-alert .kv .v { display:block; color:#0f172a; font-weight:700; font-size:13px; }
+.viol-alert footer { position:relative; z-index:1; padding:16px 22px 20px; display:flex; gap:10px; justify-content:flex-end; background:linear-gradient(180deg, rgba(248,250,252,.7), rgba(241,245,249,.95)); border-top:1px solid rgba(148,163,184,.18); }
+.viol-alert footer .btn { border-radius:999px; padding:.55rem 1rem; font-weight:800; }
+
+@media (max-width: 640px) {
+  .viol-alert { border-radius:20px; }
+  .viol-alert header { padding:16px; }
+  .viol-alert .body { grid-template-columns:1fr; padding:16px; }
+  .viol-alert .photo-frame, .viol-alert .body img, .viol-alert .body .no-pic { width:100%; height:200px; }
+  .viol-alert .detail-card { grid-template-columns:1fr; }
+}
 </style>
 
 <div class="monitor-hero d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
@@ -653,16 +689,33 @@ $st = exam_status($ex);
 <!-- Center Violation Alert Overlay -->
 <div class="viol-alert-wrap" id="viol-overlay">
   <div class="viol-alert">
-    <header><i class="fas fa-triangle-exclamation fa-lg"></i><h5>EXAM VIOLATION DETECTED</h5></header>
+    <header>
+      <div class="title-wrap">
+        <div class="icon-badge"><i class="fas fa-triangle-exclamation fa-lg"></i></div>
+        <div class="title-copy">
+          <h5>EXAM VIOLATION DETECTED</h5>
+          <span class="sub">A live monitoring event requires immediate attention.</span>
+        </div>
+      </div>
+      <div class="violation-chip" id="va-event-badge"><i class="fas fa-bolt"></i><span>Alert</span></div>
+    </header>
     <div class="body">
-      <div id="va-pic"></div>
+      <div class="photo-frame" id="va-pic"></div>
       <div class="flex-grow-1">
         <div class="name" id="va-name">—</div>
         <div class="roll" id="va-roll">—</div>
         <div class="dob" id="va-dob">—</div>
         <div class="what" id="va-what">—</div>
-        <div class="small text-secondary mt-1" id="va-detail">—</div>
-        <div class="small text-muted mt-2" id="va-time">—</div>
+        <div class="detail-card">
+          <div class="kv">
+            <span class="k">Event Detail</span>
+            <span class="v" id="va-detail">—</span>
+          </div>
+          <div class="kv">
+            <span class="k">Detected At</span>
+            <span class="v" id="va-time">—</span>
+          </div>
+        </div>
       </div>
     </div>
     <footer>
@@ -928,19 +981,44 @@ function getEventLabel(type) {
   return labels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function getEventTheme(type) {
+  const themes = {
+    fullscreen_exit: { chip: 'danger', icon: 'fa-minimize' },
+    fullscreen_key_exit: { chip: 'danger', icon: 'fa-compress' },
+    screenshot_attempt: { chip: 'warn', icon: 'fa-camera-retro' },
+    tab_switch: { chip: 'info', icon: 'fa-window-restore' },
+    window_blur: { chip: 'info', icon: 'fa-eye-slash' },
+    right_click: { chip: 'warn', icon: 'fa-mouse-pointer' },
+    copy_paste: { chip: 'warn', icon: 'fa-copy' },
+    blocked_key: { chip: 'danger', icon: 'fa-keyboard' },
+    windows_key_attempt: { chip: 'danger', icon: 'fa-windows' },
+    extension_overlay: { chip: 'warn', icon: 'fa-puzzle-piece' },
+    screen_sharing: { chip: 'info', icon: 'fa-display' },
+    remote_access: { chip: 'danger', icon: 'fa-user-secret' },
+    second_display: { chip: 'warn', icon: 'fa-desktop' }
+  };
+  return themes[type] || { chip: 'info', icon: 'fa-bell' };
+}
+
 function renderNotifList() {
   if (!NOTIFS.length) { notifList.innerHTML = '<div class="notif-empty"><i class="fas fa-bell-slash fa-2x mb-2"></i><br>No alerts yet</div>'; return; }
   notifList.innerHTML = NOTIFS.slice(0,50).map(a => {
     const pic = a.photo_url ? `<img src="${a.photo_url}" alt="">` : `<div class="no-pic"><i class="fas fa-user"></i></div>`;
     const label = escapeHtml(getEventLabel(a.event_type));
     const detail = escapeHtml(a.description || 'No details available');
+    const theme = getEventTheme(a.event_type);
     return `<div class="item">
       ${pic}
-      <div style="flex:1; font-size:13px">
-        <div><b>${escapeHtml(a.name)}</b> <small class="text-muted">(${escapeHtml(a.roll||'—')})</small></div>
-        <div class="text-danger" style="font-size:12px; font-weight:600">${label}</div>
-        <div class="small text-muted">${detail}</div>
-        <div class="small text-muted" style="font-size:10px">${new Date(a.ts).toLocaleString()}</div>
+      <div class="meta">
+        <span class="event-chip ${theme.chip}"><i class="fas ${theme.icon}"></i>${label}</span>
+        <div class="student-line">
+          <div>
+            <div class="student-name">${escapeHtml(a.name)}</div>
+            <div class="student-roll">${escapeHtml(a.roll||'—')}</div>
+          </div>
+        </div>
+        <div class="detail">${detail}</div>
+        <div class="time">${new Date(a.ts).toLocaleString()}</div>
       </div>
     </div>`;
   }).join('');
@@ -1027,12 +1105,15 @@ document.getElementById('classroom').addEventListener('click', openStudentCard);
 function showViolAlert(a) {
   const label = getEventLabel(a.event_type);
   const detail = a.description || 'No details available';
+  const theme = getEventTheme(a.event_type);
   document.getElementById('va-name').textContent = a.name || '—';
   document.getElementById('va-roll').textContent = 'Roll: ' + (a.roll || '—');
   document.getElementById('va-dob').textContent = 'DOB: ' + (a.dob || '—');
   document.getElementById('va-what').textContent = label;
   document.getElementById('va-detail').textContent = detail;
   document.getElementById('va-time').textContent = new Date(a.ts).toLocaleString();
+  document.getElementById('va-event-badge').className = 'violation-chip ' + theme.chip;
+  document.getElementById('va-event-badge').innerHTML = `<i class="fas ${theme.icon}"></i><span>${escapeHtml(label)}</span>`;
   document.getElementById('va-pic').innerHTML = a.photo_url ? `<img src="${a.photo_url}" alt="">` : `<div class="no-pic">No Photo</div>`;
   document.getElementById('viol-overlay').classList.add('open');
   try { beep(); } catch(e){}

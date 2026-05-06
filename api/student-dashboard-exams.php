@@ -23,7 +23,7 @@ try {
         $used->execute([$u['id'], $e['id']]);
         $e['attempts_used'] = (int)$used->fetchColumn();
         $e['attempts_left'] = max(0, (int)$e['max_attempts'] - $e['attempts_used']);
-        $e['can_start'] = $e['status'] === 'join' && $e['attempts_left'] > 0 && (int)$e['qcount'] > 0;
+        $e['can_start'] = exam_can_start_now($e) && $e['attempts_left'] > 0 && (int)$e['qcount'] > 0;
         $e['start_time_label'] = fmt_dt($e['start_time']);
         $e['end_time_label'] = fmt_dt($e['end_time']);
         $e['qcount'] = (int)$e['qcount'];
