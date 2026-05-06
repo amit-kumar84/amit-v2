@@ -180,7 +180,6 @@ body { background:linear-gradient(135deg,#eef2f8 0%,#e4ecf7 100%); margin:0; min
 
       <div class="actions">
         <a href="<?= h($dashboard_url) ?>" class="btn-primary-navy" id="go-now"><i class="fas fa-gauge-high"></i> Go to Dashboard</a>
-        <a href="<?= h($dashboard_url) ?>#history" class="btn-outline-navy"><i class="fas fa-clock-rotate-left"></i> View My Attempts</a>
       </div>
       <div class="countdown">Redirecting automatically in <b id="count">10</b> seconds · <span lang="hi">स्वतः पुनर्निर्देशन</span></div>
 

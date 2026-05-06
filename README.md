@@ -8,12 +8,12 @@
 ## 🚀 Quick Start
 
 ### Admin Access
-- **URL**: `http://localhost/admin/login.php`
+- **URL**: `http://localhost/bel_exam_portal/admin/login.php`
 - **Email**: `admin@belkotdwar.in`
 - **Password**: `Admin@123`
 
 ### Student Access
-- **URL**: `http://localhost/student/login.php`
+- **URL**: `http://localhost/bel_exam_portal/student/login.php`
 - **Demo Roll**: BEL-KOT-001
 - **Demo Password**: Welcome@123
 
@@ -23,92 +23,29 @@
 
 ```
 htdocs/
-├── 📄 index.php                 # Home page
-├── 📄 logout.php                # Logout handler
-├── 📄 forgot.php                # Password reset
-│
-├── 🗂️ admin/                    # Admin panel
-│   ├── login.php                # Admin login
-│   ├── dashboard.php            # Analytics dashboard
-│   ├── students.php             # Student management
-│   ├── exams.php                # Exam management
-│   ├── questions.php            # Question management (bulk upload)
-│   ├── results.php              # Results & analytics
-│   ├── admins.php               # Admin accounts
-│   ├── attempt.php              # View attempt details
-│   ├── admit-card.php           # Hall ticket generation (QR)
-│   ├── export-attempt.php       # Export attempt data
-│   ├── export-results.php       # Export results
-│   ├── _shell_top.php           # Header template
-│   └── _shell_bottom.php        # Footer template
-│
-├── 🗂️ student/                  # Student panel
-│   ├── login.php                # Student login
-│   ├── dashboard.php            # Dashboard
-│   ├── instructions.php         # Exam instructions
-│   ├── take-exam.php            # Exam interface
-│   ├── results.php              # Results view
-│   └── submit.php               # Exam submission
-│
-├── 🗂️ api/                      # Backend APIs
-│   ├── save-answer.php          # Save answer AJAX
-│   ├── violation.php            # Lockdown violation tracking
-│   └── qr-lookup.php            # Hall ticket QR verification
-│
-├── 🗂️ includes/                 # Core includes
-│   ├── config.php               # Database & settings
-│   ├── helpers.php              # Utility functions
-│   ├── lang.php                 # Bilingual support
-│   ├── header.php               # Global header
-│   ├── footer.php               # Global footer
-│   └── mailer.php               # Email functions
-│
-├── 🗂️ assets/                   # Static assets
-│   ├── css/app.css              # Custom styles
-│   ├── js/lockdown.js           # Exam lockdown script
-│   ├── icons/                   # Icon files
-│   └── lib/                     # Offline libraries
-│       ├── bootstrap/           # Bootstrap 5.3.2 local
-│       ├── fontawesome/         # Font Awesome 6.5.1 local
-│       └── qrcode/              # QRCode.js 1.0.0 local
-│
-├── 🗂️ uploads/                  # User uploads
-│   ├── photos/                  # Student photos
-│   └── .qrcache/                # Cached QR codes
-│
-├── 🗂️ bulk_formats/             # Bulk import templates
-│   ├── students_bulk_format.csv
-│   ├── questions_mcq_format.csv
-│   ├── questions_multiselect_format.csv
-│   ├── questions_true_false_format.csv
-│   ├── questions_short_answer_format.csv
-│   ├── questions_numeric_format.csv
-│   ├── questions_mixed_format.csv
-│   └── README.md                # Template documentation
-│
-├── 🗂️ samples/                  # Sample data & CSV files
-│   ├── cyber_security_questions_100.csv       # 100 cybersecurity MCQs
-│   ├── ssc_gd_mix_questions_100.csv           # 100 mixed-type questions
-│   └── students_bulk_sample.csv               # 10 sample students
-│
-├── 🗂️ docs/                     # Documentation
-│   ├── README.md                # Main documentation
-│   ├── INSTALLATION.md          # Setup instructions
-│   ├── OFFLINE_SETUP.md         # Offline deployment
-│   ├── API_REFERENCE.md         # API documentation
-│   ├── TESTING.md               # Test reports
-│   └── TROUBLESHOOTING.md       # Common issues
+├── bel_exam_portal/             # Main application folder
+│   ├── 📄 index.php             # Home page
+│   ├── 📄 logout.php            # Logout handler
+│   ├── 📄 forgot.php            # Password reset
+│   ├── 🗂️ admin/                # Admin panel
+│   ├── 🗂️ student/              # Student panel
+│   ├── 🗂️ api/                  # Backend APIs
+│   ├── 🗂️ includes/             # Core includes
+│   ├── 🗂️ assets/               # Static assets
+│   ├── 🗂️ uploads/              # User uploads
+│   ├── 🗂️ bulk_formats/         # CSV templates
+│   ├── 🗂️ samples/              # Sample data
+│   ├── 🗂️ docs/                 # Documentation
+│   ├── 🗂️ debug/                # Test and diagnostic pages
+│  
 │
 ├── 📊 Database
 │   └── schema.sql               # Complete consolidated database schema (single file)
 │
-├── ⚙️ Setup
-│   ├── OFFLINE_SETUP.bat        # Windows setup script
-│   ├── OFFLINE_SETUP.sh         # Linux/Mac setup script
-│   └── .htaccess                # Apache rewrite rules + hardening
-│
-└── 🧪 Dev-only (blocked by .htaccess in production)
-    └── debug/                   # Offline test suite, login tests, debug report
+└── 🧪 Support folders
+    ├── docs/                    # Documentation and guides
+    ├── debug/                   # Offline tests and diagnostics
+    └── scripts/                 # Utility generators and helpers
 ```
 
 ---

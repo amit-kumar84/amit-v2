@@ -97,6 +97,7 @@ require __DIR__ . '/../includes/header.php';
     <small class="text-secondary">© <?= date('Y') ?> <?= t('brand') ?></small>
   </div>
   <div class="right">
+    <div class="student-login-panel" style="width:100%; max-width:560px; display:flex; flex-direction:column; align-items:stretch; gap:16px;">
     <form method="post" style="width:100%; max-width:560px">
       <?= csrf_input() ?>
       <div class="text-center mb-4">
@@ -118,12 +119,13 @@ require __DIR__ . '/../includes/header.php';
       <input type="password" name="password" class="form-control mb-4" required>
 
       <button class="btn btn-navy w-100" data-testid="student-login-submit"><?= t('sl_submit') ?></button>
+    </form>
 
       <?php if ($loginConflict): ?>
         <div class="alert alert-warning mt-3 mb-0" role="alert">
           <div class="fw-bold mb-1">Old session already running</div>
           <div class="small">This student account is already logged in on another browser/device.</div>
-          <div class="d-flex gap-2 mt-3">
+          <div class="d-flex gap-2 mt-3 flex-wrap">
             <form method="post" class="m-0">
               <?= csrf_input() ?>
               <input type="hidden" name="session_action" value="end_old_session">
@@ -145,8 +147,10 @@ require __DIR__ . '/../includes/header.php';
       <div class="mt-4 small text-secondary" style="border-top:1px solid #e2e8f0; padding-top:10px; font-size:11px; line-height:1.5">
         <i class="fas fa-info-circle me-1"></i> For lost credentials, please contact the <b>BEL Kotdwar Examination Controller</b>. Passwords are not resettable online.
       </div>
-    </form>
+    </div>
   </div>
 </div>
 <?php require __DIR__ . '/../includes/footer.php'; ?>
-<script src="/assets/js/admin-login.js"></script>
+<?php if (file_exists(__DIR__ . '/../assets/js/student-login.js')): ?>
+<script src="<?= url('assets/js/student-login.js') ?>"></script>
+<?php endif; ?>

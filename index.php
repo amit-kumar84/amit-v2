@@ -69,7 +69,7 @@ require __DIR__ . '/includes/header.php';
 })();
 </script>
 
-<script src="/assets/js/index-exams.js"></script>
+<script src="<?= url('assets/js/index-exams.js') ?>"></script>
 
 <section class="bg-white py-5 border-top">
   <div class="container">

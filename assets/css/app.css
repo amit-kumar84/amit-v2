@@ -601,7 +601,7 @@ body.admin-body > .container.mt-3 { margin-left: 260px !important; max-width: ca
   opacity: 0;
   pointer-events:none;
 }
-login-split .left > * { position:relative; z-index:1; }
+.login-split .left > * { position:relative; z-index:1; }
 /* Admin login — polished, animated, colorful */
 .login-split .left { padding:48px 44px; }
 .login-split .left h2 { color: #fff; text-shadow: 0 6px 20px rgba(2,6,23,0.16); }
@@ -615,7 +615,7 @@ login-split .left > * { position:relative; z-index:1; }
 .login-split .left .floating-shapes .shape.small { width:56px; height:56px; border-radius:12px; }
 
 .login-split .right { display:flex; align-items:center; justify-content:center; padding: 28px; background: linear-gradient(135deg, #FF9933 0%, #FFFFFF 33%, #138808 66%, #FF9933 100%); background-size: 300% 300%; animation: tricolor-shift 8s ease infinite; }
-.login-split .right form { background: #ffffff; padding:36px; max-width:560px; width:100%; border-radius:16px; box-shadow: 0 28px 84px rgba(2,6,23,0.12); border: none; position:relative; }
+.login-split .right form { background: #ffffff; padding:36px; max-width:560px; width:100%; border-radius:16px; box-shadow: 0 28px 84px rgba(2,6,23,0.12); border: none; position:relative; opacity:1; transform:none; }
 .login-split .right form > * { position:relative; z-index:1; }
 
 @keyframes tricolor-shift { 0%{ background-position: 0% 50%; } 50%{ background-position: 100% 50%; } 100%{ background-position: 0% 50%; } }
@@ -635,8 +635,7 @@ login-split .left > * { position:relative; z-index:1; }
 /* small responsive tweaks */
 @media (max-width: 992px){ .login-split .left { padding:32px; } .login-split .right form { padding:20px; max-width:420px; } }
 
-/* subtle entrance */
-.login-split .right form { transform: translateY(6px); opacity:0; transition: transform .6s cubic-bezier(.2,.9,.2,1), opacity .6s ease; }
+/* subtle entrance is optional; keep the card visible even if JS fails */
 .login-split .right form.visible { transform: translateY(0); opacity:1; }
 
 /* animated floating shapes */

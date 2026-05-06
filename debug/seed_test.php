@@ -1,7 +1,7 @@
 <?php
 // One-shot test seeder — creates test data for Phase-2 feature validation.
-// Run: php /app/bel_exam_portal/seed_test.php
-require_once __DIR__ . '/includes/helpers.php';
+// Run: php debug/seed_test.php
+require_once __DIR__ . '/../includes/helpers.php';
 ensure_softdelete_and_permissions();
 ensure_bilingual_columns();
 

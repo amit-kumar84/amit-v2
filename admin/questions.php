@@ -137,19 +137,16 @@ if ($_SERVER['REQUEST_METHOD']==='POST') { csrf_check();
       flash('Moved to Trash','success');
     }
   elseif ($a === 'bulk') {
-    $csv = trim($_POST['csv']); 
-    if (!$csv) { flash('CSV is empty','danger'); } else {
-      $lines = preg_split('/\r\n|\n|\r/', $csv);
-      $headerRow = trim((string)array_shift($lines));
+    try {
+      $source = bulk_upload_rows_from_request($_FILES['bulk_file'] ?? null, trim($_POST['csv'] ?? ''));
+      $headerRow = trim((string)implode(',', $source['header']));
+      $lines = $source['rows'];
       if ($headerRow === '') {
         flash('CSV header is empty','danger');
       } else {
-        $h = array_map(fn($v) => strtolower(trim($v)), str_getcsv($headerRow));
+        $h = array_map(fn($v) => strtolower(trim((string)$v)), $source['header']);
         $hasTypeColumn = in_array('question_type', $h, true);
-        $required = $hasTypeColumn
-          ? ['question_type','question','option1','option2','option3','option4','correct']
-          : ['question','option1','option2','option3','option4','correct'];
-        $missing = array_diff($required, $h);
+        $missing = array_diff(['question', 'correct', 'marks'], $h);
         if ($missing) { flash('Missing required columns: '.implode(', ',$missing),'danger'); } else {
           $normalizeType = function (string $type): string {
             $type = strtolower(trim($type));
@@ -168,110 +165,154 @@ if ($_SERVER['REQUEST_METHOD']==='POST') { csrf_check();
             if (in_array($value, ['0','false','no','n'], true)) return 0;
             return null;
           };
+          $inferType = function (array $r, int $lineNo) use ($parseList, $parseBool): string {
+            $correctRaw = trim((string)($r['correct'] ?? ''));
+            $opts = [trim((string)($r['option1'] ?? '')), trim((string)($r['option2'] ?? '')), trim((string)($r['option3'] ?? '')), trim((string)($r['option4'] ?? ''))];
+            $hasOptions = array_filter($opts, fn($v) => $v !== '');
+            if (count($hasOptions) === 0) {
+              if ($correctRaw === '') {
+                throw new Exception('correct answer is required');
+              }
+              if (is_numeric($correctRaw)) {
+                return 'numeric';
+              }
+              return 'short_answer';
+            }
+            if (count($hasOptions) <= 2 && $opts[2] === '' && $opts[3] === '' && $parseBool($correctRaw) !== null) {
+              return 'true_false';
+            }
+            $selected = $parseList($correctRaw);
+            if (count($selected) > 1 || preg_match('/[|;,]/', $correctRaw)) {
+              return 'multi_select';
+            }
+            return 'mcq';
+          };
           $c = 0; $skipped = 0; $errors = [];
-          foreach ($lines as $rowNum => $ln) {
+          $typedRows = [];
+          $inferredTypes = [];
+          foreach ($lines as $rowNum => $data) {
             $lineNo = $rowNum + 2;
-            if (!trim($ln)) continue;
-            $data = str_getcsv($ln);
             if (count($data) !== count($h)) {
               $skipped++;
               if (count($errors) < 8) $errors[] = "Row $lineNo: column count mismatch";
               continue;
             }
-            $r = array_combine($h, $data);
-            $type = $hasTypeColumn ? $normalizeType((string)($r['question_type'] ?? '')) : 'mcq';
-            if ($hasTypeColumn && $type === '') {
-              $skipped++;
-              if (count($errors) < 8) $errors[] = "Row $lineNo: invalid question_type";
-              continue;
-            }
-            $qt = trim($r['question'] ?? '');
-            $m = (float)($r['marks'] ?? 1);
-            $n = (float)($r['negative'] ?? 0);
-            if ($qt === '' || $m <= 0) {
-              $skipped++;
-              if (count($errors) < 8) $errors[] = "Row $lineNo: question text or marks is invalid";
-              continue;
-            }
-            // Skip duplicate questions silently in bulk (govt audit-friendly: log skip count).
-            if (find_duplicate_question($eid, $qt, null, true)) {
-              $skipped++;
-              if (count($errors) < 8) $errors[] = "Row $lineNo: duplicate (already exists in this exam) — skipped";
-              continue;
-            }
-
-            $correctRaw = trim((string)($r['correct'] ?? ''));
-            $correctText = null;
-            $correctTextHi = null;
-            $correctNumeric = null;
-            $correctBool = null;
-            $opts = [trim($r['option1'] ?? ''), trim($r['option2'] ?? ''), trim($r['option3'] ?? ''), trim($r['option4'] ?? '')];
-            $optsHi = [trim((string)($r['option1_hi'] ?? '')), trim((string)($r['option2_hi'] ?? '')), trim((string)($r['option3_hi'] ?? '')), trim((string)($r['option4_hi'] ?? ''))];
-            $qtHi = trim((string)($r['question_hi'] ?? ''));
-            if ($qtHi === '') $qtHi = null;
-
-            if ($type === 'mcq' || $type === 'multi_select') {
-              if (!$opts[0] || !$opts[1] || !$opts[2] || !$opts[3] || $correctRaw === '') {
+            $r = array_combine($h, array_map('trim', $data));
+            $type = $hasTypeColumn ? $normalizeType((string)($r['question_type'] ?? '')) : '';
+            if ($hasTypeColumn) {
+              if ($type === '') {
                 $skipped++;
-                if (count($errors) < 8) $errors[] = "Row $lineNo: MCQ options and correct answer are required";
+                if (count($errors) < 8) $errors[] = "Row $lineNo: invalid question_type";
                 continue;
               }
-              $selected = array_map('intval', $parseList($correctRaw));
-              $selected = array_values(array_unique(array_filter($selected, fn($v) => $v >= 1 && $v <= 4)));
-              if (!$selected || ($type === 'mcq' && count($selected) !== 1)) {
+            } else {
+              try {
+                $type = $inferType($r, $lineNo);
+                $inferredTypes[$type] = true;
+              } catch (Exception $e) {
                 $skipped++;
-                if (count($errors) < 8) $errors[] = "Row $lineNo: correct must be 1-4 for MCQ or 1|3 style for multi_select";
+                if (count($errors) < 8) $errors[] = 'Row ' . $lineNo . ': ' . $e->getMessage();
                 continue;
-              }
-            } elseif ($type === 'true_false') {
-              $correctBool = $parseBool($correctRaw);
-              if ($correctBool === null) {
-                $skipped++;
-                if (count($errors) < 8) $errors[] = "Row $lineNo: correct must be true or false for true_false";
-                continue;
-              }
-            } elseif ($type === 'short_answer') {
-              $correctText = $correctRaw;
-              $correctTextHi = trim((string)($r['correct_hi'] ?? ''));
-              if ($correctTextHi === '') $correctTextHi = null;
-              if ($correctText === '') {
-                $skipped++;
-                if (count($errors) < 8) $errors[] = "Row $lineNo: correct text is required for short_answer";
-                continue;
-              }
-            } elseif ($type === 'numeric') {
-              if ($correctRaw === '' || !is_numeric($correctRaw)) {
-                $skipped++;
-                if (count($errors) < 8) $errors[] = "Row $lineNo: correct numeric value is required for numeric";
-                continue;
-              }
-              $correctNumeric = (float)$correctRaw;
-            }
-
-            db()->prepare('INSERT INTO questions (exam_id,question_type,question_text,question_text_hi,correct_text,correct_text_hi,correct_numeric,correct_bool,marks,negative_marks) VALUES (?,?,?,?,?,?,?,?,?,?)')
-              ->execute([$eid,$type,$qt,$qtHi,$correctText,$correctTextHi,$correctNumeric,$correctBool,$m,$n]);
-            $qid = db()->lastInsertId();
-
-            if ($type === 'mcq' || $type === 'multi_select') {
-              $selected = array_map('intval', $parseList($correctRaw));
-              foreach ($opts as $i => $o) {
-                if ($o === '') continue;
-                $oHi = $optsHi[$i] ?? '';
-                $oHi = $oHi !== '' ? $oHi : null;
-                db()->prepare('INSERT INTO question_options (question_id,opt_order,opt_text,opt_text_hi,is_correct) VALUES (?,?,?,?,?)')
-                  ->execute([$qid, $i + 1, $o, $oHi, in_array($i + 1, $selected, true) ? 1 : 0]);
               }
             }
-
-            $c++;
+            $typedRows[] = ['lineNo' => $lineNo, 'row' => $r, 'type' => $type];
           }
-          log_admin_activity('question_bulk_import', 'Bulk imported questions for exam id ' . $eid, current_user(), 'admin/questions.php?exam_id=' . $eid, ['table' => 'questions', 'count' => $c]);
-          $msg = "Imported $c question" . ($c === 1 ? '' : 's');
-          if ($skipped) $msg .= "; $skipped row" . ($skipped === 1 ? '' : 's') . " skipped";
-          if ($errors) $msg .= ". First issues: " . implode(' | ', $errors);
-          flash($msg, $c > 0 ? 'success' : 'danger');
+          if (!$hasTypeColumn && count($inferredTypes) > 1) {
+            flash('Mixed question files require a question_type column. Use the mixed template for multiple question types.', 'danger');
+          } else {
+            foreach ($typedRows as $item) {
+              $lineNo = $item['lineNo'];
+              $r = $item['row'];
+              $type = $item['type'];
+              $qt = trim($r['question'] ?? '');
+              $m = (float)($r['marks'] ?? 1);
+              $n = (float)($r['negative'] ?? 0);
+              if ($qt === '' || $m <= 0) {
+                $skipped++;
+                if (count($errors) < 8) $errors[] = "Row $lineNo: question text or marks is invalid";
+                continue;
+              }
+              if (find_duplicate_question($eid, $qt, null, true)) {
+                $skipped++;
+                if (count($errors) < 8) $errors[] = "Row $lineNo: duplicate (already exists in this exam) — skipped";
+                continue;
+              }
+
+              $correctRaw = trim((string)($r['correct'] ?? ''));
+              $correctText = null;
+              $correctTextHi = null;
+              $correctNumeric = null;
+              $correctBool = null;
+              $opts = [trim((string)($r['option1'] ?? '')), trim((string)($r['option2'] ?? '')), trim((string)($r['option3'] ?? '')), trim((string)($r['option4'] ?? ''))];
+              $optsHi = [trim((string)($r['option1_hi'] ?? '')), trim((string)($r['option2_hi'] ?? '')), trim((string)($r['option3_hi'] ?? '')), trim((string)($r['option4_hi'] ?? ''))];
+              $qtHi = trim((string)($r['question_hi'] ?? ''));
+              if ($qtHi === '') $qtHi = null;
+
+              if ($type === 'mcq' || $type === 'multi_select') {
+                if (!$opts[0] || !$opts[1] || !$opts[2] || !$opts[3] || $correctRaw === '') {
+                  $skipped++;
+                  if (count($errors) < 8) $errors[] = "Row $lineNo: MCQ options and correct answer are required";
+                  continue;
+                }
+                $selected = array_map('intval', $parseList($correctRaw));
+                $selected = array_values(array_unique(array_filter($selected, fn($v) => $v >= 1 && $v <= 4)));
+                if (!$selected || ($type === 'mcq' && count($selected) !== 1)) {
+                  $skipped++;
+                  if (count($errors) < 8) $errors[] = "Row $lineNo: correct must be 1-4 for MCQ or 1|3 style for multi_select";
+                  continue;
+                }
+              } elseif ($type === 'true_false') {
+                $correctBool = $parseBool($correctRaw);
+                if ($correctBool === null) {
+                  $skipped++;
+                  if (count($errors) < 8) $errors[] = "Row $lineNo: correct must be true or false for true_false";
+                  continue;
+                }
+              } elseif ($type === 'short_answer') {
+                $correctText = $correctRaw;
+                $correctTextHi = trim((string)($r['correct_hi'] ?? ''));
+                if ($correctTextHi === '') $correctTextHi = null;
+                if ($correctText === '') {
+                  $skipped++;
+                  if (count($errors) < 8) $errors[] = "Row $lineNo: correct text is required for short_answer";
+                  continue;
+                }
+              } elseif ($type === 'numeric') {
+                if ($correctRaw === '' || !is_numeric($correctRaw)) {
+                  $skipped++;
+                  if (count($errors) < 8) $errors[] = "Row $lineNo: correct numeric value is required for numeric";
+                  continue;
+                }
+                $correctNumeric = (float)$correctRaw;
+              }
+
+              db()->prepare('INSERT INTO questions (exam_id,question_type,question_text,question_text_hi,correct_text,correct_text_hi,correct_numeric,correct_bool,marks,negative_marks) VALUES (?,?,?,?,?,?,?,?,?,?)')
+                ->execute([$eid,$type,$qt,$qtHi,$correctText,$correctTextHi,$correctNumeric,$correctBool,$m,$n]);
+              $qid = db()->lastInsertId();
+
+              if ($type === 'mcq' || $type === 'multi_select') {
+                $selected = array_map('intval', $parseList($correctRaw));
+                foreach ($opts as $i => $o) {
+                  if ($o === '') continue;
+                  $oHi = $optsHi[$i] ?? '';
+                  $oHi = $oHi !== '' ? $oHi : null;
+                  db()->prepare('INSERT INTO question_options (question_id,opt_order,opt_text,opt_text_hi,is_correct) VALUES (?,?,?,?,?)')
+                    ->execute([$qid, $i + 1, $o, $oHi, in_array($i + 1, $selected, true) ? 1 : 0]);
+                }
+              }
+
+              $c++;
+            }
+            log_admin_activity('question_bulk_import', 'Bulk imported questions for exam id ' . $eid, current_user(), 'admin/questions.php?exam_id=' . $eid, ['table' => 'questions', 'count' => $c]);
+            $msg = "Imported $c question" . ($c === 1 ? '' : 's');
+            if ($skipped) $msg .= "; $skipped row" . ($skipped === 1 ? '' : 's') . " skipped";
+            if ($errors) $msg .= ". First issues: " . implode(' | ', $errors);
+            flash($msg, $c > 0 ? 'success' : 'danger');
+          }
         }
       }
+    } catch (Exception $e) {
+      flash($e->getMessage(), 'danger');
     }
   }
   redirect(url('admin/questions.php?exam_id='.$eid));
@@ -480,17 +521,24 @@ $questionChunks = $rows ? array_chunk($rows, (int)ceil(count($rows) / 2)) : [];
     </div>
   </div>
 </div>
-<div class="modal fade" id="bulk"><div class="modal-dialog modal-lg"><form method="post" id="bulkForm" onsubmit="return validateBulkForm(event)" class="modal-content"><?= csrf_input() ?>
+<div class="modal fade" id="bulk"><div class="modal-dialog modal-lg"><form method="post" id="bulkForm" onsubmit="return validateBulkForm(event)" enctype="multipart/form-data" class="modal-content"><?= csrf_input() ?>
   <input type="hidden" name="action" value="bulk">
-  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-file-csv me-2"></i>Bulk MCQ Upload (CSV)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-file-csv me-2"></i>Bulk Question Upload (CSV / Excel)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
   <div class="modal-body">
     <div id="bulk-errors" class="alert alert-danger d-none" role="alert" style="border-radius:8px; border:1px solid rgba(239,68,68,0.2);"></div>
     
     <div class="mb-4">
-      <div class="small fw-bold text-muted mb-3" style="letter-spacing:0.05em; text-transform:uppercase;">📋 CSV Header Format</div>
+      <div class="small fw-bold text-muted mb-3" style="letter-spacing:0.05em; text-transform:uppercase;">📋 CSV / Excel Header Format</div>
       <div style="background: linear-gradient(135deg, rgba(14,42,71,0.04), rgba(0,169,224,0.04)); padding:12px 16px; border-radius:8px; border-left:4px solid #00A9E0;">
-        <code style="color:#0E2A47; font-weight:600; letter-spacing:0.01em;">question_type,question,option1,option2,option3,option4,correct,marks,negative</code>
+        <code style="color:#0E2A47; font-weight:600; letter-spacing:0.01em;">question,question_hi,option1,option1_hi,option2,option2_hi,option3,option3_hi,option4,option4_hi,correct,correct_hi,marks,negative</code>
       </div>
+      <div class="small text-muted mt-2">Single-type files do not need <code>question_type</code>. Use the mixed template when combining multiple question types.</div>
+    </div>
+
+    <div class="mb-4 p-3 rounded" style="background: rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2);">
+      <label class="form-label-xs mb-2"><i class="fas fa-file-excel me-2" style="color:#16a34a;"></i>Upload File</label>
+      <input type="file" name="bulk_file" class="form-control" accept=".csv,.xlsx,.xls,.xlsm">
+      <div class="small text-muted mt-2">Supported file formats only: <code>.csv</code>, <code>.xlsx</code>, <code>.xls</code>, <code>.xlsm</code>. If a file is selected, it will be used first.</div>
     </div>
 
     <div class="mb-4 p-3 rounded" style="background: rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2);">
@@ -752,6 +800,11 @@ function validateForm(e) {
 
 function validateBulkForm(e) {
   e.preventDefault();
+  const fileInput = document.querySelector('input[name="bulk_file"]');
+  if (fileInput && fileInput.files && fileInput.files.length > 0) {
+    document.getElementById('bulkForm').submit();
+    return false;
+  }
   const csv = document.getElementById('csvInput').value.trim();
   
   if (!csv) {

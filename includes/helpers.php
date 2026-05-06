@@ -115,14 +115,27 @@ function gen_username(string $name): string {
 function base_url(): string {
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    // Subfolder detection: if served from /bel-exam/... use that
-    // Only apply prefix if app is NOT at root and is in a deployment folder like /bel-exam
+    
+    // Dynamically detect app folder name (works with any XAMPP folder name)
+    // Example: /bel_exam_portal/index.php → prefix = /bel_exam_portal
+    // Example: /bel_exam_portal/admin/login.php → prefix = /bel_exam_portal
+    // Example: /index.php (at root) → prefix = ''
     $script = $_SERVER['SCRIPT_NAME'] ?? '';
     $prefix = '';
-    // Check if there's a deployment folder (e.g., /bel-exam/ but NOT /admin/ or /student/)
-    if (preg_match('#^(/bel-exam)/#', $script, $m)) {
-        $prefix = $m[1];
+    
+    // Split path into parts: ['', 'folder_name', 'subfolder', 'file.php']
+    $parts = array_filter(explode('/', $script));
+    
+    // If there are more than 1 parts before the filename, first part is the app folder
+    // (We exclude 'htdocs' as it's the web root)
+    if (count($parts) >= 2) {
+        $firstPart = reset($parts);
+        // Only use as prefix if it's not a PHP file (contains a dot)
+        if (strpos($firstPart, '.') === false) {
+            $prefix = '/' . $firstPart;
+        }
     }
+    
     return $scheme . '://' . $host . $prefix;
 }
 
@@ -190,6 +203,264 @@ function save_candidate_photo(array $file, string $rollSlug): ?string {
     if (!move_uploaded_file($file['tmp_name'], $dest)) throw new Exception('Failed to save photo');
     @chmod($dest, 0644);
     return PHOTO_URL_PREFIX . $fname;
+}
+
+function bulk_upload_rows_from_request(?array $uploadFile, string $csvText): array {
+    $hasUpload = $uploadFile && !empty($uploadFile['tmp_name']) && is_uploaded_file($uploadFile['tmp_name']);
+    if ($hasUpload) {
+        $name = strtolower((string)($uploadFile['name'] ?? ''));
+        $ext = pathinfo($name, PATHINFO_EXTENSION);
+        if ($ext === 'csv') {
+            $csvText = (string)file_get_contents($uploadFile['tmp_name']);
+            return bulk_upload_rows_from_csv($csvText);
+        }
+        if ($ext === 'xlsx' || $ext === 'xlsm') {
+            return bulk_upload_rows_from_xlsx($uploadFile['tmp_name']);
+        }
+        if ($ext === 'xls') {
+            return bulk_upload_rows_from_xls($uploadFile['tmp_name']);
+        }
+        throw new Exception('Unsupported upload file type. Please upload CSV, XLSX, XLSM, or XLS.');
+    }
+
+    return bulk_upload_rows_from_csv($csvText);
+}
+
+function bulk_upload_rows_from_xls(string $filePath): array {
+    $converted = bulk_upload_convert_xls_to_xlsx($filePath);
+    try {
+        return bulk_upload_rows_from_xlsx($converted);
+    } finally {
+        if ($converted !== $filePath && is_file($converted)) {
+            @unlink($converted);
+        }
+    }
+}
+
+function bulk_upload_convert_xls_to_xlsx(string $filePath): string {
+    if (class_exists('COM')) {
+        $outputFile = tempnam(sys_get_temp_dir(), 'bulk_xls_');
+        if ($outputFile === false) {
+            throw new Exception('Could not create a temporary file for XLS conversion.');
+        }
+        @unlink($outputFile);
+        $outputFile .= '.xlsx';
+
+        $excel = new COM('Excel.Application');
+        $excel->Visible = false;
+        $excel->DisplayAlerts = false;
+
+        $workbook = null;
+        try {
+            $workbook = $excel->Workbooks->Open($filePath, 0, true);
+            $workbook->SaveAs($outputFile, 51);
+            $workbook->Close(false);
+            $excel->Quit();
+            return $outputFile;
+        } catch (Throwable $e) {
+            if ($workbook) {
+                try { $workbook->Close(false); } catch (Throwable $ignored) {}
+            }
+            try { $excel->Quit(); } catch (Throwable $ignored) {}
+            if (is_file($outputFile)) {
+                @unlink($outputFile);
+            }
+            throw new Exception('Could not convert XLS file. ' . $e->getMessage());
+        }
+    }
+
+    $converters = ['soffice', 'libreoffice'];
+    $converter = null;
+    foreach ($converters as $candidate) {
+        $located = trim((string)shell_exec('where ' . escapeshellarg($candidate) . ' 2>NUL'));
+        if ($located !== '') {
+            $converter = $candidate;
+            break;
+        }
+    }
+
+    if ($converter === null) {
+        throw new Exception('XLS upload requires Microsoft Excel or LibreOffice on this server.');
+    }
+
+    $outputDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'bulk_xls_' . bin2hex(random_bytes(6));
+    if (!mkdir($outputDir, 0777, true) && !is_dir($outputDir)) {
+        throw new Exception('Could not create a temporary folder for XLS conversion.');
+    }
+
+    $command = $converter
+        . ' --headless --convert-to xlsx --outdir '
+        . escapeshellarg($outputDir)
+        . ' '
+        . escapeshellarg($filePath)
+        . ' 2>&1';
+    $output = shell_exec($command);
+    $files = glob($outputDir . DIRECTORY_SEPARATOR . '*.xlsx') ?: [];
+    if (!$files) {
+        if (is_dir($outputDir)) {
+            @rmdir($outputDir);
+        }
+        throw new Exception('Could not convert XLS file. ' . trim((string)$output));
+    }
+
+    $converted = $files[0];
+    @rmdir($outputDir);
+    return $converted;
+}
+
+function bulk_upload_rows_from_csv(string $csvText): array {
+    $csvText = trim($csvText);
+    if ($csvText === '') {
+        throw new Exception('CSV content is empty.');
+    }
+
+    $lines = preg_split('/\r\n|\n|\r/', $csvText);
+    $lines = array_values(array_filter($lines, fn($line) => trim((string)$line) !== ''));
+    if (!$lines) {
+        throw new Exception('CSV content is empty.');
+    }
+
+    $header = str_getcsv(array_shift($lines));
+    $rows = [];
+    foreach ($lines as $line) {
+        $rows[] = str_getcsv($line);
+    }
+
+    return ['header' => $header, 'rows' => $rows, 'source' => 'csv'];
+}
+
+function bulk_upload_rows_from_xlsx(string $filePath): array {
+    if (!class_exists('ZipArchive')) {
+        throw new Exception('XLSX upload requires the PHP zip extension.');
+    }
+
+    $zip = new ZipArchive();
+    if ($zip->open($filePath) !== true) {
+        throw new Exception('Could not read XLSX file.');
+    }
+
+    $sharedStrings = [];
+    $sharedXml = $zip->getFromName('xl/sharedStrings.xml');
+    if ($sharedXml !== false && trim($sharedXml) !== '') {
+        $shared = simplexml_load_string($sharedXml);
+        if ($shared && isset($shared->si)) {
+            foreach ($shared->si as $item) {
+                $text = '';
+                if (isset($item->t)) {
+                    $text = (string)$item->t;
+                } else {
+                    foreach ($item->r as $run) {
+                        $text .= (string)($run->t ?? '');
+                    }
+                }
+                $sharedStrings[] = $text;
+            }
+        }
+    }
+
+    $workbookXml = $zip->getFromName('xl/workbook.xml');
+    $relsXml = $zip->getFromName('xl/_rels/workbook.xml.rels');
+    if ($workbookXml === false || $relsXml === false) {
+        throw new Exception('Invalid XLSX file structure.');
+    }
+
+    $workbook = simplexml_load_string($workbookXml);
+    $rels = simplexml_load_string($relsXml);
+    if (!$workbook || !$rels) {
+        throw new Exception('Could not parse XLSX file.');
+    }
+
+    $relMap = [];
+    foreach ($rels->Relationship as $rel) {
+        $relMap[(string)$rel['Id']] = (string)$rel['Target'];
+    }
+
+    $sheet = $workbook->sheets->sheet[0] ?? null;
+    if (!$sheet) {
+        throw new Exception('No worksheet found in XLSX file.');
+    }
+
+    $sheetRel = (string)$sheet->attributes('r', true)->id;
+    if (!$sheetRel || empty($relMap[$sheetRel])) {
+        throw new Exception('Worksheet link is missing in XLSX file.');
+    }
+
+    $sheetPath = 'xl/' . ltrim($relMap[$sheetRel], '/');
+    $sheetXml = $zip->getFromName($sheetPath);
+    if ($sheetXml === false) {
+        throw new Exception('Could not read worksheet data from XLSX file.');
+    }
+
+    $sheetData = simplexml_load_string($sheetXml);
+    if (!$sheetData || empty($sheetData->sheetData->row)) {
+        throw new Exception('XLSX worksheet is empty.');
+    }
+
+    $rows = [];
+    foreach ($sheetData->sheetData->row as $row) {
+        $cells = [];
+        $maxIndex = 0;
+        foreach ($row->c as $cell) {
+            $ref = (string)$cell['r'];
+            $idx = bulk_upload_column_index($ref);
+            if ($idx < 1) {
+                continue;
+            }
+            $value = bulk_upload_cell_value($cell, $sharedStrings);
+            $cells[$idx - 1] = $value;
+            $maxIndex = max($maxIndex, $idx);
+        }
+        if (!$cells) {
+            continue;
+        }
+        ksort($cells);
+        $rowValues = [];
+        for ($i = 0; $i < $maxIndex; $i++) {
+            $rowValues[] = array_key_exists($i, $cells) ? (string)$cells[$i] : '';
+        }
+        if (implode('', array_map('trim', $rowValues)) === '') {
+            continue;
+        }
+        $rows[] = $rowValues;
+    }
+
+    if (!$rows) {
+        throw new Exception('XLSX worksheet is empty.');
+    }
+
+    $header = array_map('strval', array_shift($rows));
+    return ['header' => $header, 'rows' => $rows, 'source' => 'xlsx'];
+}
+
+function bulk_upload_column_index(string $cellRef): int {
+    if ($cellRef === '') return 0;
+    if (!preg_match('/^([A-Z]+)\d+$/i', $cellRef, $m)) {
+        return 0;
+    }
+    $letters = strtoupper($m[1]);
+    $index = 0;
+    for ($i = 0, $len = strlen($letters); $i < $len; $i++) {
+        $index = ($index * 26) + (ord($letters[$i]) - 64);
+    }
+    return $index;
+}
+
+function bulk_upload_cell_value(SimpleXMLElement $cell, array $sharedStrings): string {
+    $type = (string)($cell['t'] ?? '');
+    if ($type === 'inlineStr') {
+        return trim((string)($cell->is->t ?? ''));
+    }
+
+    $value = isset($cell->v) ? (string)$cell->v : '';
+    if ($type === 's') {
+        $idx = (int)$value;
+        return $sharedStrings[$idx] ?? '';
+    }
+    if ($type === 'b') {
+        return $value === '1' ? '1' : '0';
+    }
+
+    return trim($value);
 }
 
 // Return list of exam IDs assigned to a student

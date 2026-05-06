@@ -632,5 +632,5 @@ function attachEventListeners() {
   } catch(err) { console.error('Error attaching timing listener:', err); }
 }
 </script>
-<script src="/assets/js/admin-exams.js"></script>
+<script src="<?= url('assets/js/admin-exams.js') ?>"></script>
 <?php require __DIR__ . '/_shell_bottom.php'; ?>

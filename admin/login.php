@@ -68,4 +68,4 @@ require __DIR__ . '/../includes/header.php';
   </div>
 </div>
 <?php require __DIR__ . '/../includes/footer.php'; ?>
-<script src="/assets/js/admin-login.js"></script>
+<script src="<?= url('assets/js/admin-login.js') ?>"></script>

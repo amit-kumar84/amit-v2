@@ -150,20 +150,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $row = db()->prepare('SELECT name,email,roll_number,dob,plain_password FROM users WHERE id=? AND role="student"');
             $row->execute([$id]); $s = $row->fetch();
             if (!$s) throw new Exception('Student not found');
-            if (!$s['plain_password']) throw new Exception('No plain password on file. Click Reset first to generate one.');
+            if (!$s['plain_password']) throw new Exception('No plain password on file. Edit the student and generate a password first.');
             if (!defined('SMTP_HOST') || !SMTP_HOST) throw new Exception('SMTP not configured. Set SMTP_HOST in includes/config.php.');
             $res = mail_credentials($s, $s['plain_password']);
             $mailStatus = $res['ok'] ? ['ok' => true, 'msg' => "Credentials emailed to {$s['email']}"] : ['ok' => false, 'msg' => 'Mail failed: ' . $res['error']];
             $payload = ['table' => 'users', 'action_type' => 'email_sent', 'student_id' => $id, 'email_to' => $s['email']];
             log_admin_activity('student_email', 'Emailed credentials for student ' . $s['name'] . ' (' . $s['email'] . ')', current_user(), 'admin/students.php', $payload);
         } elseif ($act === 'bulk') {
-            $csv    = trim($_POST['csv'] ?? '');
-            $lines  = preg_split('/\r\n|\n|\r/', $csv);
-            $header = str_getcsv(array_shift($lines));
+          $source = bulk_upload_rows_from_request($_FILES['bulk_file'] ?? null, trim($_POST['csv'] ?? ''));
+          $header = array_map(fn($v) => strtolower(trim((string)$v)), $source['header']);
+          $lines  = $source['rows'];
             $created = 0; $errors = [];
-            foreach ($lines as $i => $ln) {
-                if (!trim($ln)) continue;
-                $row = array_combine($header, str_getcsv($ln));
+          foreach ($lines as $i => $data) {
+            if (count($data) !== count($header)) {
+              $errors[] = 'Row ' . ($i + 2) . ': column count mismatch';
+              continue;
+            }
+            $row = array_combine($header, array_map('trim', $data));
                 try {
                     $name  = trim($row['name']);
                     $email = strtolower(trim($row['email']));
@@ -349,7 +352,6 @@ Password: <?= h($creds['pwd']) ?></pre>
       data-photo="<?= h($r['photo_path'] ?? '') ?>" data-assigned-exams='<?= h(json_encode(assigned_exam_ids($r['id']))) ?>'
       data-testid="edit-btn-<?= $r['id'] ?>" data-perm-section="students" data-perm-action="edit"><i class="fas fa-pen"></i></button>
       <a href="<?= url('admin/admit-card.php?id=' . $r['id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary" data-testid="hallticket-btn-<?= $r['id'] ?>">Hall Ticket</a>
-      <!-- Reset button removed per admin requirements -->
         <?php if ($smtpReady): ?>
         <form method="post" class="d-inline"><?= csrf_input() ?><input type="hidden" name="action" value="email"><input type="hidden" name="id" value="<?= $r['id'] ?>"><button class="btn btn-sm btn-outline-navy" title="Email credentials" data-testid="email-btn-<?= $r['id'] ?>" data-perm-section="students" data-perm-action="view"><i class="fas fa-envelope"></i></button></form>
       <?php endif; ?>
@@ -463,10 +465,14 @@ Password: <?= h($creds['pwd']) ?></pre>
         <label class="form-label-xs mt-2">Category</label>
         <select name="category" id="e_cat" class="form-select"><option value="external">External Candidate</option><option value="internal">Internal (BEL Staff)</option></select>
         <label class="form-label-xs mt-2">Password (6 characters)</label>
-        <div class="input-group mb-2">
+        <div class="mb-2">
           <input name="password" id="e_password" type="text" maxlength="6" class="form-control form-control-sm" placeholder="Leave blank to keep unchanged" pattern=".{6,6}" title="Exactly 6 characters">
-          <button type="button" id="e_generate_pwd_btn" class="btn btn-outline-secondary">Generate</button>
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" id="e_generate_pwd_chk">
+            <label class="form-check-label small" for="e_generate_pwd_chk">Generate random password</label>
+          </div>
         </div>
+          const pwdToggle = document.getElementById('e_generate_pwd_chk'); if (pwdToggle) pwdToggle.checked = false;
         <label class="form-label-xs mt-2">Assign Exams</label>
         <input type="text" class="form-control form-control-sm mb-2 exam-search" data-target="edit-exams-list" placeholder="Search exam name or code">
         <div class="mb-2">
@@ -496,16 +502,22 @@ Password: <?= h($creds['pwd']) ?></pre>
 </form></div></div>
 
 <!-- Bulk Modal -->
-<div class="modal fade" id="bulkModal"><div class="modal-dialog modal-lg"><form method="post" class="modal-content"><?= csrf_input() ?>
+<div class="modal fade" id="bulkModal"><div class="modal-dialog modal-lg"><form method="post" enctype="multipart/form-data" class="modal-content"><?= csrf_input() ?>
   <input type="hidden" name="action" value="bulk">
-  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-users me-2"></i>Bulk Upload Students (CSV)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-users me-2"></i>Bulk Upload Students (CSV / Excel)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
   <div class="modal-body">
     <div class="mb-4">
-      <div class="small fw-bold text-muted mb-3" style="letter-spacing:0.05em; text-transform:uppercase;">📋 CSV Header Format</div>
+      <div class="small fw-bold text-muted mb-3" style="letter-spacing:0.05em; text-transform:uppercase;">📋 CSV / Excel Header Format</div>
       <div style="background: linear-gradient(135deg, rgba(14,42,71,0.04), rgba(0,169,224,0.04)); padding:12px 16px; border-radius:8px; border-left:4px solid #00A9E0;">
         <code style="color:#0E2A47; font-weight:600;">name,email,roll_number,dob,category,password</code>
       </div>
       <div class="small text-muted mt-2">Optional per-row exam codes: <code>exam_codes</code> (separate by comma/semicolon/pipe). DOB: <code>YYYY-MM-DD</code>. Password is optional.</div>
+    </div>
+
+    <div class="mb-4 p-3 rounded" style="background: rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2);">
+      <label class="form-label-xs mb-2"><i class="fas fa-file-excel me-2" style="color:#16a34a;"></i>Upload File</label>
+      <input type="file" name="bulk_file" class="form-control" accept=".csv,.xlsx,.xls,.xlsm">
+      <div class="small text-muted mt-2">Supported file formats only: <code>.csv</code>, <code>.xlsx</code>, <code>.xls</code>, <code>.xlsm</code>. If a file is selected, it will be used first.</div>
     </div>
 
     <label class="form-label-xs mb-2"><i class="fas fa-file-lines me-2"></i>CSV Content</label>
@@ -571,12 +583,17 @@ function genRandomPwd(len) {
   for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
   return out;
 }
-const genBtn = document.getElementById('e_generate_pwd_btn');
-if (genBtn) {
-  genBtn.addEventListener('click', () => {
+const genChk = document.getElementById('e_generate_pwd_chk');
+if (genChk) {
+  genChk.addEventListener('change', () => {
     const f = document.getElementById('e_password');
     if (!f) return;
-    f.value = genRandomPwd(6);
+    if (genChk.checked) {
+      f.value = genRandomPwd(6);
+      f.focus();
+    } else {
+      f.value = '';
+    }
   });
 }
 

@@ -89,7 +89,7 @@ $live = $pdo->query('SELECT a.id, a.ends_at, u.name, u.roll_number, e.exam_name,
   </div>
 </div>
 
-<script src="/assets/js/admin-dashboard.js"></script>
+<script src="<?= url('assets/js/admin-dashboard.js') ?>"></script>
 <script>
 (function(){
   var formatter = new Intl.DateTimeFormat('en-IN', {

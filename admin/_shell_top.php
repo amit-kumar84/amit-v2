@@ -8,6 +8,32 @@ ensure_phase3_migrations();
 $PAGE_TITLE = ($ADMIN_TITLE ?? 'Admin') . ' — BEL Kotdwar';
 $ADMIN_SHELL = true;
 $PUBLIC = false;
+function admin_nav_current_page(): string {
+  $page = basename($_SERVER['SCRIPT_NAME'] ?? '');
+  $routeMap = [
+    'dashboard.php' => 'dashboard.php',
+    'students.php' => 'students.php',
+    'admit-card.php' => 'students.php',
+    'exams.php' => 'exams.php',
+    'questions.php' => 'exams.php',
+    'preview-question.php' => 'exams.php',
+    'live-monitor.php' => 'live-monitor.php',
+    'monitor-exam.php' => 'live-monitor.php',
+    'export-classroom.php' => 'live-monitor.php',
+    'export-classroom-pdf.php' => 'live-monitor.php',
+    'results.php' => 'results.php',
+    'exam-results-view.php' => 'results.php',
+    'export-results.php' => 'results.php',
+    'attempt.php' => 'results.php',
+    'attempt-pdf.php' => 'results.php',
+    'admins.php' => 'admins.php',
+    'trash.php' => 'trash.php',
+    'logs.php' => 'logs.php',
+  ];
+
+  return $routeMap[$page] ?? '';
+}
+$curr = admin_nav_current_page();
 require __DIR__ . '/../includes/header.php';
 $nav = [
   ['dashboard.php','Dashboard','fa-gauge-high'],
@@ -42,4 +68,4 @@ if (!empty($u['is_super'])) {
   </aside>
   <main class="admin-main" data-testid="admin-main">
     <div class="p-4">
-<script src="/assets/js/admin-sidebar.js"></script>
+<script src="<?= url('assets/js/admin-sidebar.js') ?>?v=<?= @filemtime(__DIR__ . '/../assets/js/admin-sidebar.js') ?: time() ?>"></script>

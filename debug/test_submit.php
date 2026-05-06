@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Submit Button Test</title>
-    <link rel="stylesheet" href="assets/lib/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/lib/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="../assets/lib/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../assets/lib/fontawesome/css/all.min.css">
     <style>
         /* Enhanced confirmation modal styles */
         .app-confirm-fade .modal-dialog { transform: translateY(-10px); transition: transform .28s ease; }
@@ -59,7 +59,7 @@
   </div>
 </div>
 
-<script src="assets/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
 // Mock console to capture logs
 const logBuffer = [];
@@ -152,7 +152,7 @@ window.appConfirm = function(message, opts = {}) {
 };
 
 // Mock submit URL
-const SUBMIT_URL = 'http://localhost/student/submit.php?attempt=1';
+const SUBMIT_URL = '../student/submit.php?attempt=1';
 
 // Mock variables from take-exam.php
 let currentExamLang = 'en';
